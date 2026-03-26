@@ -1,12 +1,6 @@
 {
   "name": "manako",
   "version": "0.1.0",
-  "description": "Manako monitoring dashboard plugin. Monitor management & incident response from Claude Code.",
-  "author": {
-    "name": "elchika-inc"
-  },
-  "homepage": "https://manako.dev",
-  "repository": "https://github.com/elchika-inc/manako-dev",
-  "license": "MIT",
-  "keywords": ["monitoring", "mcp", "incidents", "devops"]
+  "description": "Manako 監視ダッシュボードの Claude Code Plugin。モニター管理・インシデント対応を Claude Code から直接実行。",
+  "author": "naoto24kawa"
 }
