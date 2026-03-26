@@ -71,9 +71,13 @@ manako monitors add example.com --name "SSL Cert" --type ssl \
 manako monitors add example.com --name "Domain Expiry" --type domain \
   --config '{"domain":"example.com","warnDays":[30,14,7]}'
 
-# Web Change
+# Web Change (text - Free プラン可)
 manako monitors add https://example.com --name "Price Watch" --type webchange \
   --config '{"url":"https://example.com/pricing","selector":".price","checkType":"text"}'
+
+# Web Change (screenshot - Paid プランのみ, 最小 1800s 間隔)
+manako monitors add https://example.com --name "Visual Diff" --type webchange \
+  --config '{"url":"https://example.com","checkType":"screenshot"}' --interval 1800
 ```
 
 ## Parameters
@@ -91,6 +95,11 @@ manako monitors add https://example.com --name "Price Watch" --type webchange \
 - チェック間隔: Free プランでは最小 300 秒、Paid プランでは最小 60 秒。最大 86400 秒 (24 時間)
 - Free プランではモニター数に上限あり (`PLAN_LIMITS.free.maxMonitors`)
 - モニター名は必須ではないが、設定すると管理しやすい
+- WebChange の `checkType`:
+  - `text`: Free / Paid プラン利用可。`selector` が必須
+  - `screenshot`: Paid プランのみ。最小間隔 1800 秒 (30分)。`selector` は不要
+  - `both`: Paid プランのみ。最小間隔 1800 秒 (30分)。`selector` が必須
+  - Free プランで `screenshot` または `both` を指定すると 402 エラー
 
 ## Additional Resources
 

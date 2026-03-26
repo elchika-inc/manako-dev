@@ -101,9 +101,34 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 | `intervalSeconds` | チェック間隔 (秒) |
 | `lastCheckedAt` | 最終チェック日時 |
 
+### スナップショット一覧 (WebChange モニター)
+
+WebChange モニターのスナップショット履歴を取得する。checkType が `screenshot` または `both` の場合、スクリーンショット情報も含まれる。
+
+**API:**
+```bash
+curl -s -H "Authorization: Bearer <accessToken>" \
+  https://api.manako.dev/dashboard/monitors/<monitor-id>/snapshots
+```
+
+レスポンスの `screenshotR2Key` と `screenshotHash` は checkType が `screenshot` または `both` の場合のみ値が入る。
+
+### スクリーンショット画像取得
+
+特定スナップショットのスクリーンショット PNG 画像を取得する。
+
+**API:**
+```bash
+curl -s -H "Authorization: Bearer <accessToken>" \
+  https://api.manako.dev/dashboard/monitors/<monitor-id>/snapshots/<snapshot-id>/screenshot \
+  -o screenshot.png
+```
+
 ## Usage Tips
 
 - `manako status` は概要表示に最適。ステータスアイコン付きで一目で状態がわかる
 - 特定モニターの深堀りは `manako monitors get <id>` で JSON を取得
 - 設定変更後やインシデント対応中は `manako monitors check <id>` で即座確認
 - モニター ID がわからない場合は先に `manako monitors list` で一覧取得
+- WebChange モニターで `screenshot` や `both` を利用するには Paid プランが必要 (最小間隔 1800 秒)
+- Free プランでは checkType `text` のみ利用可能
