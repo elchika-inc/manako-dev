@@ -1,0 +1,10 @@
+{
+  "name": "manako-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @manako/mcp-server build 2>/dev/null || echo 'no build script'",
+    "typecheck": "tsc --noEmit -p apps/mcp-server/tsconfig.json"
+  },
+  "packageManager": "pnpm@10.6.5"
+}

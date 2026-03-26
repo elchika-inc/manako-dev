@@ -1,0 +1,36 @@
+name = "manako-mcp-server"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "460779e9c02c4490bac5d604772c0d67"
+
+[vars]
+ENVIRONMENT = "development"
+API_URL = "http://localhost:8787"
+
+# ============================================
+# Staging
+# ============================================
+[env.staging]
+name = "manako-mcp-server-stg"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+API_URL = "https://manako-api-stg.naoto24kawa.workers.dev"
+
+# ============================================
+# Production
+# ============================================
+[env.production]
+name = "manako-mcp-server"
+
+[[env.production.kv_namespaces]]
+binding = "SESSION_KV"
+id = "460779e9c02c4490bac5d604772c0d67"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+API_URL = "https://api.manako.dev"

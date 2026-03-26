@@ -1,0 +1,20 @@
+{
+  "name": "manako-dev",
+  "owner": {
+    "name": "elchika-inc"
+  },
+  "metadata": {
+    "description": "Manako monitoring tools for AI-powered development"
+  },
+  "plugins": [
+    {
+      "name": "manako",
+      "source": "./plugins/claude-code",
+      "description": "Monitor management & incident response from Claude Code",
+      "version": "0.1.0",
+      "license": "MIT",
+      "keywords": ["monitoring", "mcp", "incidents", "devops"],
+      "category": "devops"
+    }
+  ]
+}
