@@ -1,11 +1,13 @@
-import { ManakoClient, type Monitor, type Incident, type StatusPage } from "@manako/api-client";
+import { ManakoClient, type Monitor, type Incident, type StatusPage, type AuditLog } from "@manako/api-client";
 
 // Action constants — single source of truth for schema, switch, error messages
 const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check"] as const;
 const INCIDENT_ACTIONS = ["list", "acknowledge", "create", "update", "resolve", "delete"] as const;
 const STATUS_PAGE_ACTIONS = ["list"] as const;
+const AUDIT_LOG_ACTIONS = ["list"] as const;
 type MonitorAction = (typeof MONITOR_ACTIONS)[number];
 type IncidentAction = (typeof INCIDENT_ACTIONS)[number];
+type AuditLogAction = (typeof AUDIT_LOG_ACTIONS)[number];
 
 const STATUS_EMOJI: Record<string, string> = {
   up: "🟢", down: "🔴", degraded: "🟡", unknown: "⚪", paused: "⏸",
@@ -28,6 +30,14 @@ function formatIncidentCompact(i: Incident): string {
 function formatStatusPageCompact(sp: StatusPage): string {
   const visibility = sp.isPublic ? "public" : "private";
   return `${sp.title} — /${sp.slug} (${visibility})`;
+}
+
+function formatAuditLogCompact(log: AuditLog): string {
+  const ts = new Date(log.createdAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const user = log.userName || log.userId || "system";
+  const resource = log.resourceType || "-";
+  const ip = log.ipAddress || "-";
+  return `${ts} | ${user} | ${log.action} | ${resource} | ${ip}`;
 }
 
 function text(t: string) {
@@ -231,6 +241,56 @@ export function createTools(client: ManakoClient) {
             }
             default:
               return error(`Unknown action: ${args.action}. Use: ${STATUS_PAGE_ACTIONS.join(", ")}`);
+          }
+        } catch (err: any) {
+          return error(err.message || String(err));
+        }
+      },
+    },
+    "audit-logs": {
+      description: "View audit logs. Actions: list (show audit trail with optional filters). Use verbose=true for full data.",
+      inputSchema: {
+        type: "object" as const,
+        required: ["action"] as const,
+        properties: {
+          action: { type: "string", enum: [...AUDIT_LOG_ACTIONS], description: "Operation" },
+          actionFilter: { type: "string", description: "Filter by action name (list)" },
+          resourceType: { type: "string", description: "Filter by resource type (list)" },
+          userId: { type: "string", description: "Filter by user ID (list)" },
+          from: { type: "string", description: "Start datetime ISO 8601 (list)" },
+          to: { type: "string", description: "End datetime ISO 8601 (list)" },
+          limit: { type: "integer", minimum: 1, maximum: 100, description: "Max entries to return (list, default: 50)" },
+          verbose: { type: "boolean", default: false, description: "Full API response" },
+        },
+      },
+      execute: async (args: {
+        action: string;
+        actionFilter?: string;
+        resourceType?: string;
+        userId?: string;
+        from?: string;
+        to?: string;
+        limit?: number;
+        verbose?: boolean;
+      }) => {
+        try {
+          switch (args.action) {
+            case "list": {
+              const { auditLogs } = await client.listAuditLogs({
+                action: args.actionFilter,
+                resourceType: args.resourceType,
+                userId: args.userId,
+                from: args.from,
+                to: args.to,
+                limit: args.limit,
+              });
+              if (args.verbose) return text(JSON.stringify(auditLogs, null, 2));
+              if (auditLogs.length === 0) return text("No audit logs found.");
+              const summary = auditLogs.map(formatAuditLogCompact).join("\n");
+              return text(`Audit Logs (${auditLogs.length} entries):\n\n${summary}`);
+            }
+            default:
+              return error(`Unknown action: ${args.action}. Use: ${AUDIT_LOG_ACTIONS.join(", ")}`);
           }
         } catch (err: any) {
           return error(err.message || String(err));

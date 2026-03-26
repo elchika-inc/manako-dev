@@ -42,6 +42,19 @@ export interface StatusPage {
   createdAt: string;
 }
 
+export interface AuditLog {
+  id: string;
+  teamId: string;
+  userId: string | null;
+  userName: string | null;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
 export class ManakoClient {
   private apiUrl: string;
   private apiKey: string;
@@ -155,5 +168,27 @@ export class ManakoClient {
   // Status Pages
   async listStatusPages(): Promise<{ statusPages: StatusPage[] }> {
     return this.request("GET", "/status-pages");
+  }
+
+  // Audit Logs
+  async listAuditLogs(options?: {
+    action?: string;
+    resourceType?: string;
+    userId?: string;
+    from?: string;
+    to?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ auditLogs: AuditLog[]; nextCursor: string | null; hasMore: boolean }> {
+    const params = new URLSearchParams();
+    if (options?.action) params.append("action", options.action);
+    if (options?.resourceType) params.append("resourceType", options.resourceType);
+    if (options?.userId) params.append("userId", options.userId);
+    if (options?.from) params.append("from", options.from);
+    if (options?.to) params.append("to", options.to);
+    if (options?.cursor) params.append("cursor", options.cursor);
+    if (options?.limit) params.append("limit", String(options.limit));
+    const query = params.toString();
+    return this.request("GET", `/audit-logs${query ? "?" + query : ""}`);
   }
 }
