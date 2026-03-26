@@ -2,6 +2,8 @@
 
 [Manako](https://manako.dev) developer tools - MCP Server, Claude Code Plugin, and API Client.
 
+**[Website](https://manako.dev)** | **[Documentation](https://docs.manako.dev)** | **[Dashboard](https://app.manako.dev)** | **[Status](https://status.manako.dev)**
+
 ## Overview
 
 | Component | Description |
@@ -87,6 +89,14 @@ cd apps/mcp-server
 pnpm install
 pnpm deploy
 ```
+
+## Links
+
+- [Manako Website](https://manako.dev) - Product landing page
+- [Documentation](https://docs.manako.dev) - Guides, API reference, and setup instructions
+- [API Reference](https://docs.manako.dev/api/) - Public API documentation (OpenAPI)
+- [Dashboard](https://app.manako.dev) - Monitoring dashboard
+- [Status Page](https://status.manako.dev) - Manako service status
 
 ## Contributing
 
