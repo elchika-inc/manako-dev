@@ -29,6 +29,7 @@ export interface ApiError {
   code: string;
   message: string;
   status: number;
+  upgradeUrl?: string;
 }
 
 export interface StatusPage {
@@ -190,5 +191,20 @@ export class ManakoClient {
     if (options?.limit) params.append("limit", String(options.limit));
     const query = params.toString();
     return this.request("GET", `/audit-logs${query ? "?" + query : ""}`);
+  }
+
+  // Billing
+  async getSubscription(): Promise<{
+    plan: string;
+    modules: string[];
+    subscription: {
+      id: string;
+      stripeSubscriptionId: string;
+      status: string;
+      currentPeriodEnd: string | null;
+      items: { moduleId: string; stripeItemId: string }[];
+    } | null;
+  }> {
+    return this.request("GET", "/billing/subscription");
   }
 }

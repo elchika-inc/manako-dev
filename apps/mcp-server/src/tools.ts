@@ -145,7 +145,11 @@ export function createTools(client: ManakoClient) {
               return error(`Unknown action: ${args.action}. Use: ${MONITOR_ACTIONS.join(", ")}`);
           }
         } catch (err: any) {
-          return error(err.message || String(err));
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(`${msg}\nUpgrade your plan: ${err.upgradeUrl}`);
+          }
+          return error(msg);
         }
       },
     },
@@ -215,7 +219,11 @@ export function createTools(client: ManakoClient) {
               return error(`Unknown action: ${args.action}. Use: ${INCIDENT_ACTIONS.join(", ")}`);
           }
         } catch (err: any) {
-          return error(err.message || String(err));
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(`${msg}\nUpgrade your plan: ${err.upgradeUrl}`);
+          }
+          return error(msg);
         }
       },
     },
@@ -243,7 +251,11 @@ export function createTools(client: ManakoClient) {
               return error(`Unknown action: ${args.action}. Use: ${STATUS_PAGE_ACTIONS.join(", ")}`);
           }
         } catch (err: any) {
-          return error(err.message || String(err));
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(`${msg}\nUpgrade your plan: ${err.upgradeUrl}`);
+          }
+          return error(msg);
         }
       },
     },
@@ -293,7 +305,11 @@ export function createTools(client: ManakoClient) {
               return error(`Unknown action: ${args.action}. Use: ${AUDIT_LOG_ACTIONS.join(", ")}`);
           }
         } catch (err: any) {
-          return error(err.message || String(err));
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(`${msg}\nUpgrade your plan: ${err.upgradeUrl}`);
+          }
+          return error(msg);
         }
       },
     },
