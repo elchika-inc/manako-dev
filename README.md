@@ -1,5 +1,7 @@
 # Manako Dev
 
+[![Status](https://status.manako.dev/manako/badge.svg)](https://status.manako.dev/manako)
+
 [Manako](https://manako.dev) developer tools - MCP Server, Claude Code Plugin, and API Client.
 
 **[Website](https://manako.dev)** | **[Documentation](https://docs.manako.dev)** | **[Dashboard](https://app.manako.dev)** | **[Status](https://status.manako.dev)**

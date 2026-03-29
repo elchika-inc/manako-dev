@@ -1,3 +1,11 @@
+import type {
+  MonitorType,
+  MonitorStatus,
+  MonitorConfig,
+  IncidentType,
+  IncidentStatus,
+} from "@manako/shared";
+
 export interface ManakoClientConfig {
   apiUrl: string;
   apiKey: string;
@@ -6,19 +14,20 @@ export interface ManakoClientConfig {
 export interface Monitor {
   id: string;
   name: string;
-  type: string;
-  status: string;
-  config: unknown;
+  type: MonitorType;
+  status: MonitorStatus;
+  config: MonitorConfig;
   intervalSeconds: number;
-  isActive: number;
+  isActive: boolean;
   lastCheckedAt: string | null;
+  maintenanceUntil: string | null;
 }
 
 export interface Incident {
   id: string;
   monitorId: string | null;
-  type: string;
-  status: string;
+  type: IncidentType;
+  status: IncidentStatus;
   title: string | null;
   cause: string | null;
   startedAt: string;
@@ -38,7 +47,7 @@ export interface StatusPage {
   slug: string;
   title: string;
   description: string | null;
-  isPublic: number;
+  isPublic: boolean;
   customDomain: string | null;
   createdAt: string;
 }
@@ -54,6 +63,11 @@ export interface AuditLog {
   metadata: Record<string, unknown> | null;
   ipAddress: string | null;
   createdAt: string;
+}
+
+// Normalize D1 integer booleans (0/1) to JS booleans
+function normalizeMonitor(m: any): Monitor {
+  return { ...m, isActive: !!m.isActive };
 }
 
 export class ManakoClient {
@@ -101,31 +115,27 @@ export class ManakoClient {
 
   // Monitors
   async listMonitors(): Promise<{ monitors: Monitor[] }> {
-    return this.request("GET", "/monitors");
+    const res = await this.request<{ monitors: any[] }>("GET", "/monitors");
+    return { monitors: res.monitors.map(normalizeMonitor) };
   }
 
   async getMonitor(id: string): Promise<{ monitor: Monitor }> {
-    return this.request("GET", `/monitors/${encodeURIComponent(id)}`);
+    const res = await this.request<{ monitor: any }>("GET", `/monitors/${encodeURIComponent(id)}`);
+    return { monitor: normalizeMonitor(res.monitor) };
   }
 
   async createMonitor(data: {
-    type: string;
+    type: MonitorType;
     name: string;
     config: Record<string, unknown>;
     intervalSeconds?: number;
   }): Promise<{ monitor: Monitor }> {
-    return this.request("POST", "/monitors", data);
+    const res = await this.request<{ monitor: any }>("POST", "/monitors", data);
+    return { monitor: normalizeMonitor(res.monitor) };
   }
 
   async deleteMonitor(id: string): Promise<{ ok: boolean }> {
     return this.request("DELETE", `/monitors/${encodeURIComponent(id)}`);
-  }
-
-  async triggerCheck(id: string): Promise<{
-    result: { status: string; responseTimeMs: number; statusCode: number; errorMessage: string };
-    monitor: Monitor;
-  }> {
-    return this.request("POST", `/monitors/${encodeURIComponent(id)}/check`);
   }
 
   async updateMonitor(
@@ -137,11 +147,23 @@ export class ManakoClient {
       isActive?: boolean;
     },
   ): Promise<{ monitor: Monitor }> {
-    return this.request("PUT", `/monitors/${encodeURIComponent(id)}`, data);
+    const res = await this.request<{ monitor: any }>("PUT", `/monitors/${encodeURIComponent(id)}`, data);
+    return { monitor: normalizeMonitor(res.monitor) };
+  }
+
+  async startMaintenance(
+    id: string,
+    durationSeconds: number = 600,
+  ): Promise<{ monitor: Monitor }> {
+    return this.request("POST", `/monitors/${encodeURIComponent(id)}/maintenance`, { durationSeconds });
+  }
+
+  async endMaintenance(id: string): Promise<{ monitor: Monitor }> {
+    return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/maintenance`);
   }
 
   // Incidents
-  async listIncidents(status?: string): Promise<{ incidents: Incident[] }> {
+  async listIncidents(status?: IncidentStatus): Promise<{ incidents: Incident[] }> {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
     return this.request("GET", `/incidents${query}`);
   }
@@ -168,7 +190,18 @@ export class ManakoClient {
 
   // Status Pages
   async listStatusPages(): Promise<{ statusPages: StatusPage[] }> {
-    return this.request("GET", "/status-pages");
+    const res = await this.request<{ statusPages: any[] }>("GET", "/status-pages");
+    return { statusPages: res.statusPages.map((sp) => ({ ...sp, isPublic: !!sp.isPublic })) };
+  }
+
+  // Notification Channels
+  async testNotificationChannel(id: string): Promise<{ success: boolean }> {
+    return this.request("POST", `/notification-channels/${encodeURIComponent(id)}/test`);
+  }
+
+  // Billing
+  async getSubscription(): Promise<{ plan: string; modules: string[]; subscription: unknown }> {
+    return this.request("GET", "/billing/subscription");
   }
 
   // Audit Logs
@@ -191,20 +224,5 @@ export class ManakoClient {
     if (options?.limit) params.append("limit", String(options.limit));
     const query = params.toString();
     return this.request("GET", `/audit-logs${query ? "?" + query : ""}`);
-  }
-
-  // Billing
-  async getSubscription(): Promise<{
-    plan: string;
-    modules: string[];
-    subscription: {
-      id: string;
-      stripeSubscriptionId: string;
-      status: string;
-      currentPeriodEnd: string | null;
-      items: { moduleId: string; stripeItemId: string }[];
-    } | null;
-  }> {
-    return this.request("GET", "/billing/subscription");
   }
 }

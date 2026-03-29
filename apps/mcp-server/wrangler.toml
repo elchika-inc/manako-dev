@@ -17,6 +17,10 @@ API_URL = "http://localhost:8787"
 [env.staging]
 name = "manako-mcp-server-stg"
 
+[[env.staging.kv_namespaces]]
+binding = "SESSION_KV"
+id = "460779e9c02c4490bac5d604772c0d67"
+
 [env.staging.vars]
 ENVIRONMENT = "staging"
 API_URL = "https://manako-api-stg.naoto24kawa.workers.dev"
