@@ -153,13 +153,34 @@ export class ManakoClient {
 
   async startMaintenance(
     id: string,
-    durationSeconds: number = 600,
+    maintenanceUntil: string,
+    notify?: boolean,
   ): Promise<{ monitor: Monitor }> {
-    return this.request("POST", `/monitors/${encodeURIComponent(id)}/maintenance`, { durationSeconds });
+    return this.request("POST", `/monitors/${encodeURIComponent(id)}/maintenance`, { maintenanceUntil, notify });
   }
 
-  async endMaintenance(id: string): Promise<{ monitor: Monitor }> {
-    return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/maintenance`);
+  async endMaintenance(id: string, notify?: boolean): Promise<{ monitor: Monitor }> {
+    return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/maintenance`, notify ? { notify } : undefined);
+  }
+
+  async startBulkMaintenance(
+    monitorIds: string[],
+    maintenanceUntil: string,
+    notify?: boolean,
+  ): Promise<{ updated: number }> {
+    return this.request("POST", "/monitors/bulk/maintenance", { monitorIds, maintenanceUntil, notify });
+  }
+
+  async endBulkMaintenance(monitorIds: string[], notify?: boolean): Promise<{ updated: number }> {
+    return this.request("DELETE", "/monitors/bulk/maintenance", { monitorIds, notify });
+  }
+
+  async startAllMaintenance(maintenanceUntil: string, notify?: boolean): Promise<{ updated: number }> {
+    return this.request("POST", "/monitors/all/maintenance", { maintenanceUntil, notify });
+  }
+
+  async endAllMaintenance(notify?: boolean): Promise<{ updated: number }> {
+    return this.request("DELETE", "/monitors/all/maintenance", notify ? { notify } : undefined);
   }
 
   async baselineReset(id: string): Promise<{ monitor: Monitor }> {

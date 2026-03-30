@@ -68,6 +68,10 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       idRequiredForUpdate: "id is required for update action",
       maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
       maintenanceEnded: "Maintenance ended: {{name}} ({{id}})",
+      maintenanceStartedAll: "Maintenance started for {{count}} monitors until {{until}}",
+      maintenanceStartedBulk: "Maintenance started for {{count}} monitors until {{until}}",
+      maintenanceEndedAll: "Maintenance ended for {{count}} monitors",
+      maintenanceEndedBulk: "Maintenance ended for {{count}} monitors",
       baselineReset: "Baseline reset: {{name}} ({{id}})",
     },
     incidents: {
@@ -118,7 +122,10 @@ export function createTools(client: ManakoClient, tr?: Translation) {
           config: { type: "object", description: "Type-specific config (create/update non-http types)" },
           intervalSeconds: { type: "integer", minimum: 300, maximum: 86400, default: 300, description: "Interval in seconds (create)" },
           isActive: { type: "boolean", description: "Enable/disable (update)" },
-          durationSeconds: { type: "integer", minimum: 60, maximum: 3600, default: 600, description: "Maintenance duration in seconds (maintenance)" },
+          maintenanceUntil: { type: "string", description: "ISO 8601 end datetime for maintenance" },
+          monitorIds: { type: "string", description: "Comma-separated monitor IDs for bulk maintenance" },
+          all: { type: "boolean", description: "Apply to all active monitors" },
+          notify: { type: "boolean", description: "Send notification to channels" },
           end: { type: "boolean", description: "End maintenance (maintenance)" },
           before: { type: "string", description: "Reset stats before this date (YYYY-MM-DD). Omit for all time." },
           verbose: { type: "boolean", default: false, description: "Full API response" },
@@ -133,7 +140,10 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         config?: Record<string, unknown>;
         intervalSeconds?: number;
         isActive?: boolean;
-        durationSeconds?: number;
+        maintenanceUntil?: string;
+        monitorIds?: string;
+        all?: boolean;
+        notify?: boolean;
         end?: boolean;
         before?: string;
         verbose?: boolean;
@@ -202,13 +212,35 @@ export function createTools(client: ManakoClient, tr?: Translation) {
               return text(`${t(tm.monitors.checkResult, { status })}${time}${err}\nMonitor: ${formatMonitorCompact(monitor)}`);
             }
             case "maintenance": {
-              if (!args.id) return error(t(tm.monitors.idRequired, { action: "maintenance" }));
               if (args.end) {
-                const { monitor } = await client.endMaintenance(args.id);
+                if (args.all) {
+                  const { updated } = await client.endAllMaintenance(args.notify);
+                  return text(t(tm.monitors.maintenanceEndedAll, { count: updated }));
+                }
+                if (args.monitorIds) {
+                  const ids = (args.monitorIds as string).split(",");
+                  const { updated } = await client.endBulkMaintenance(ids, args.notify);
+                  return text(t(tm.monitors.maintenanceEndedBulk, { count: updated }));
+                }
+                if (!args.id) return error(t(tm.monitors.idRequired, { action: "maintenance" }));
+                const { monitor } = await client.endMaintenance(args.id as string, args.notify as boolean | undefined);
                 return text(t(tm.monitors.maintenanceEnded, { name: monitor.name, id: monitor.id }));
               }
-              const duration = args.durationSeconds ?? 600;
-              const { monitor } = await client.startMaintenance(args.id, duration);
+
+              const maintenanceUntil = (args.maintenanceUntil as string)
+                ?? new Date(Date.now() + 600 * 1000).toISOString(); // default 10 min
+
+              if (args.all) {
+                const { updated } = await client.startAllMaintenance(maintenanceUntil, args.notify as boolean | undefined);
+                return text(t(tm.monitors.maintenanceStartedAll, { count: updated, until: maintenanceUntil }));
+              }
+              if (args.monitorIds) {
+                const ids = (args.monitorIds as string).split(",");
+                const { updated } = await client.startBulkMaintenance(ids, maintenanceUntil, args.notify as boolean | undefined);
+                return text(t(tm.monitors.maintenanceStartedBulk, { count: updated, until: maintenanceUntil }));
+              }
+              if (!args.id) return error(t(tm.monitors.idRequired, { action: "maintenance" }));
+              const { monitor } = await client.startMaintenance(args.id as string, maintenanceUntil, args.notify as boolean | undefined);
               return text(t(tm.monitors.maintenanceStarted, {
                 name: monitor.name,
                 id: monitor.id,

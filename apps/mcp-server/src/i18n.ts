@@ -39,6 +39,10 @@ export interface Translation {
     idRequiredForUpdate: string;
     maintenanceStarted: string;
     maintenanceEnded: string;
+    maintenanceStartedAll: string;
+    maintenanceStartedBulk: string;
+    maintenanceEndedAll: string;
+    maintenanceEndedBulk: string;
     baselineReset: string;
   };
   incidents: {
@@ -118,6 +122,10 @@ const en: Translation = {
     idRequiredForUpdate: "id is required for update action",
     maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
     maintenanceEnded: "Maintenance ended: {{name}} ({{id}})",
+    maintenanceStartedAll: "Maintenance started for {{count}} monitors until {{until}}",
+    maintenanceStartedBulk: "Maintenance started for {{count}} monitors until {{until}}",
+    maintenanceEndedAll: "Maintenance ended for {{count}} monitors",
+    maintenanceEndedBulk: "Maintenance ended for {{count}} monitors",
     baselineReset: "Baseline reset: {{name}} ({{id}})",
   },
   incidents: {
@@ -207,6 +215,10 @@ const ja: Translation = {
     idRequiredForUpdate: "更新アクションには id が必要です",
     maintenanceStarted: "メンテナンス開始: {{name}} ({{id}}) - {{until}} まで",
     maintenanceEnded: "メンテナンス終了: {{name}} ({{id}})",
+    maintenanceStartedAll: "{{count}}件のモニターのメンテナンスを開始しました (終了: {{until}})",
+    maintenanceStartedBulk: "{{count}}件のモニターのメンテナンスを開始しました (終了: {{until}})",
+    maintenanceEndedAll: "{{count}}件のモニターのメンテナンスを終了しました",
+    maintenanceEndedBulk: "{{count}}件のモニターのメンテナンスを終了しました",
     baselineReset: "ベースラインリセット: {{name}} ({{id}})",
   },
   incidents: {
