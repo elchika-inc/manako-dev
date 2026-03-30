@@ -3,7 +3,7 @@ import type { Translation } from "./i18n.js";
 import { t } from "./i18n.js";
 
 // Action constants — single source of truth for schema, switch, error messages
-const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance"] as const;
+const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance", "baseline-reset"] as const;
 const INCIDENT_ACTIONS = ["list", "acknowledge"] as const;
 const STATUS_PAGE_ACTIONS = ["list"] as const;
 const AUDIT_LOG_ACTIONS = ["list"] as const;
@@ -68,6 +68,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       idRequiredForUpdate: "id is required for update action",
       maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
       maintenanceEnded: "Maintenance ended: {{name}} ({{id}})",
+      baselineReset: "Baseline reset: {{name}} ({{id}})",
     },
     incidents: {
       description: "Manage incidents. Actions: list, acknowledge, create (manual), update, resolve, delete (manual only). Use verbose=true for full data.",
@@ -211,6 +212,11 @@ export function createTools(client: ManakoClient, tr?: Translation) {
                 id: monitor.id,
                 until: monitor.maintenanceUntil ?? "",
               }));
+            }
+            case "baseline-reset": {
+              if (!args.id) return error(t(tm.monitors.idRequired, { action: "baseline-reset" }));
+              const { monitor } = await client.baselineReset(args.id);
+              return text(t(tm.monitors.baselineReset, { name: monitor.name, id: monitor.id }));
             }
             default:
               return error(t(tm.monitors.unknownAction, { action: args.action, actions: MONITOR_ACTIONS.join(", ") }));

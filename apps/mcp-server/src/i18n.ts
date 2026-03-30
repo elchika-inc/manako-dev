@@ -39,6 +39,7 @@ export interface Translation {
     idRequiredForUpdate: string;
     maintenanceStarted: string;
     maintenanceEnded: string;
+    baselineReset: string;
   };
   incidents: {
     description: string;
@@ -117,6 +118,7 @@ const en: Translation = {
     idRequiredForUpdate: "id is required for update action",
     maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
     maintenanceEnded: "Maintenance ended: {{name}} ({{id}})",
+    baselineReset: "Baseline reset: {{name}} ({{id}})",
   },
   incidents: {
     description:
@@ -205,6 +207,7 @@ const ja: Translation = {
     idRequiredForUpdate: "更新アクションには id が必要です",
     maintenanceStarted: "メンテナンス開始: {{name}} ({{id}}) - {{until}} まで",
     maintenanceEnded: "メンテナンス終了: {{name}} ({{id}})",
+    baselineReset: "ベースラインリセット: {{name}} ({{id}})",
   },
   incidents: {
     description:

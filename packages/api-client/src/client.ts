@@ -162,6 +162,11 @@ export class ManakoClient {
     return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/maintenance`);
   }
 
+  async baselineReset(id: string): Promise<{ monitor: Monitor }> {
+    const res = await this.request<{ monitor: any }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
+    return { monitor: normalizeMonitor(res.monitor) };
+  }
+
   // Incidents
   async listIncidents(status?: IncidentStatus): Promise<{ incidents: Incident[] }> {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";

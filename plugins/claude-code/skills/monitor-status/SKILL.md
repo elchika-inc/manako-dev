@@ -124,6 +124,14 @@ curl -s -H "Authorization: Bearer <accessToken>" \
   -o screenshot.png
 ```
 
+### Baseline Reset (WebChange only)
+
+WebChange モニターのベースラインをリセットする。`changeMode: "tamper"` でステータスが "down" になった場合、ベースラインをリセットして "up" に戻す。
+
+- CLI: `manako monitors baseline-reset <id>`
+- MCP: `monitors` tool with `action: "baseline-reset"`, `id: "<monitor-id>"`
+- API: `POST /api/v1/monitors/<id>/baseline-reset`
+
 ## Usage Tips
 
 - `manako status` は概要表示に最適。ステータスアイコン付きで一目で状態がわかる
