@@ -1,52 +1,53 @@
 # Manako Dev
 
-[![Status](https://status.manako.dev/manako/badge.svg)](https://status.manako.dev/manako)
+[English](./README.en.md)
 
-[Manako](https://manako.dev) developer tools - MCP Server, Claude Code Plugin, and API Client.
+[Manako](https://manako.dev) 開発者向けツール - MCP Server、Claude Code Plugin、API Client を提供します。
 
-**[Website](https://manako.dev)** | **[Documentation](https://docs.manako.dev)** | **[Dashboard](https://app.manako.dev)** | **[Status](https://status.manako.dev)**
+**[公式サイト](https://manako.dev)** | **[ドキュメント](https://docs.manako.dev)** | **[ダッシュボード](https://app.manako.dev)** | **[ステータス](https://status.manako.dev)**
 
-## Overview
+## 概要
 
-| Component | Description |
-|-----------|-------------|
-| **MCP Server** | Model Context Protocol server for AI agents to manage monitors and incidents |
-| **Claude Code Plugin** | Claude Code marketplace plugin for monitoring operations |
-| **API Client** | TypeScript client library for the Manako Public API |
+| コンポーネント | 説明 |
+|--------------|------|
+| **MCP Server** | AI エージェントがモニターやインシデントを管理するための Model Context Protocol サーバー |
+| **Claude Code Plugin** | Claude Code マーケットプレイスから利用できるモニタリング操作プラグイン |
+| **API Client** | Manako Public API の TypeScript クライアントライブラリ |
 
 ## Claude Code Plugin
 
-### Install from Marketplace
+### マーケットプレイスからインストール
 
 ```bash
 /plugin marketplace add elchika-inc/manako-dev
 /plugin install manako@manako-dev
 ```
 
-### Setup
+### セットアップ
 
-After installation, run in Claude Code:
+インストール後、Claude Code で以下を実行してください:
 
-1. **CLI auth (recommended):** `manako login --api-key mk_your_key`
-2. **MCP auth:** Ask Claude "Manako にログインして"
+1. **CLI 認証(推奨):** `manako login --api-key mk_your_key`
+2. **MCP 認証:** Claude に "Manako にログインして" と依頼
 
-### Available Skills
+### 利用可能なスキル
 
-| Skill | Example | Description |
-|-------|---------|-------------|
-| **setup** | "manako をセットアップして" | CLI/MCP initial setup guide |
-| **monitor-status** | "モニターの状態を確認して" | Check monitor status |
-| **create-monitor** | "example.com を監視して" | Create monitors (7 types) |
-| **list-incidents** | "インシデント一覧を見せて" | List and filter incidents |
-| **acknowledge-incident** | "インシデントを確認済みにして" | Acknowledge incidents |
+| スキル | 使用例 | 説明 |
+|-------|--------|------|
+| **setup** | "manako をセットアップして" | CLI/MCP の初期セットアップガイド |
+| **monitor-status** | "モニターの状態を確認して" | モニターの状態を確認 |
+| **create-monitor** | "example.com を監視して" | モニターを作成(7種類対応) |
+| **list-incidents** | "インシデント一覧を見せて" | インシデントの一覧表示・フィルタリング |
+| **acknowledge-incident** | "インシデントを確認済みにして" | インシデントの確認(acknowledge) |
+| **audit-logs** | "監査ログを確認して" | チームの監査ログを表示 |
 
 ## MCP Server
 
-The MCP Server is hosted at `https://mcp.manako.dev/mcp` and supports the Streamable HTTP transport (MCP protocol `2024-11-05`).
+MCP Server は `https://mcp.manako.dev/mcp` でホストされており、Streamable HTTP トランスポート(MCP プロトコル `2024-11-05`)をサポートしています。
 
-### Connect manually
+### 手動接続
 
-Add to your MCP client configuration:
+MCP クライアントの設定に以下を追加してください:
 
 ```json
 {
@@ -62,12 +63,13 @@ Add to your MCP client configuration:
 }
 ```
 
-### Tools
+### ツール一覧
 
-- **monitors** - List, create, update, delete, and check monitors
-- **incidents** - List, acknowledge, create, update, resolve, and delete incidents
-- **status-pages** - List status pages
-- **auth** - Login with email/password (creates session API key)
+- **monitors** - モニターの一覧取得、作成、更新、削除、チェック実行
+- **incidents** - インシデントの一覧取得、確認、作成、更新、解決、削除
+- **status-pages** - ステータスページの一覧取得
+- **audit-logs** - 監査ログの一覧取得
+- **auth** - メール/パスワードでログイン(セッション API キーを発行)
 
 ## API Client
 
@@ -82,9 +84,9 @@ const client = new ManakoClient({
 const { monitors } = await client.listMonitors();
 ```
 
-## Self-Hosting
+## セルフホスティング
 
-The MCP Server can be deployed to Cloudflare Workers:
+MCP Server は Cloudflare Workers にデプロイできます:
 
 ```bash
 cd apps/mcp-server
@@ -92,18 +94,18 @@ pnpm install
 pnpm deploy
 ```
 
-## Links
+## リンク
 
-- [Manako Website](https://manako.dev) - Product landing page
-- [Documentation](https://docs.manako.dev) - Guides, API reference, and setup instructions
-- [API Reference](https://docs.manako.dev/api/) - Public API documentation (OpenAPI)
-- [Dashboard](https://app.manako.dev) - Monitoring dashboard
-- [Status Page](https://status.manako.dev) - Manako service status
+- [Manako 公式サイト](https://manako.dev) - プロダクトランディングページ
+- [ドキュメント](https://docs.manako.dev) - ガイド、API リファレンス、セットアップ手順
+- [API リファレンス](https://docs.manako.dev/api/) - Public API ドキュメント(OpenAPI)
+- [ダッシュボード](https://app.manako.dev) - モニタリングダッシュボード
+- [ステータスページ](https://status.manako.dev) - Manako サービスステータス
 
-## Contributing
+## コントリビュート
 
-Contributions are welcome! Please open a Pull Request on this repository.
+コントリビュートを歓迎します! このリポジトリに Pull Request を作成してください。
 
-## License
+## ライセンス
 
 MIT
