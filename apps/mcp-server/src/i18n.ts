@@ -101,7 +101,7 @@ const en: Translation = {
   },
   monitors: {
     description:
-      "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID). Use verbose=true for full data.",
+      "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID), stats-reset (delete check history). Use verbose=true for full data.",
     noMonitors: "No monitors configured.",
     title: "Monitors ({{count}}):",
     idRequired: "id is required for {{action}} action",
@@ -142,7 +142,7 @@ const en: Translation = {
   },
   statusPages: {
     description:
-      "View status pages. Actions: list (show all status pages). Use verbose=true for full data.",
+      "View status pages. Actions: list (show all status pages), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
     noPages: "No status pages configured.",
     title: "Status Pages ({{count}}):",
     unknownAction:
@@ -188,7 +188,7 @@ const ja: Translation = {
   },
   monitors: {
     description:
-      "監視ターゲットを管理します。アクション: list (一覧), get (詳細), create (作成), update (更新), delete (削除), check (即時チェック)。verbose=true で全データ表示。",
+      "監視ターゲットを管理します。アクション: list (一覧), get (詳細), create (作成), update (更新), delete (削除), check (即時チェック), stats-reset (統計リセット)。verbose=true で全データ表示。",
     noMonitors: "モニターが設定されていません。",
     title: "モニター ({{count}}):",
     idRequired: "{{action}} アクションには id が必要です",
@@ -235,7 +235,7 @@ const ja: Translation = {
   },
   statusPages: {
     description:
-      "ステータスページを表示します。アクション: list (全ステータスページ一覧)。verbose=true で全データ表示。",
+      "ステータスページを表示します。アクション: list (全ステータスページ一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
     noPages: "ステータスページが設定されていません。",
     title: "ステータスページ ({{count}}):",
     unknownAction:

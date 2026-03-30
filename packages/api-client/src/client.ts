@@ -167,6 +167,16 @@ export class ManakoClient {
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
+  async resetMonitorStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
+    const query = before ? `?before=${encodeURIComponent(before)}` : "";
+    return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/stats${query}`);
+  }
+
+  async resetStatusPageStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
+    const query = before ? `?before=${encodeURIComponent(before)}` : "";
+    return this.request("DELETE", `/status-pages/${encodeURIComponent(id)}/stats${query}`);
+  }
+
   // Incidents
   async listIncidents(status?: IncidentStatus): Promise<{ incidents: Incident[] }> {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";

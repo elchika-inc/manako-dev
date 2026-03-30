@@ -3,9 +3,9 @@ import type { Translation } from "./i18n.js";
 import { t } from "./i18n.js";
 
 // Action constants — single source of truth for schema, switch, error messages
-const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance", "baseline-reset"] as const;
+const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance", "baseline-reset", "stats-reset"] as const;
 const INCIDENT_ACTIONS = ["list", "acknowledge"] as const;
-const STATUS_PAGE_ACTIONS = ["list"] as const;
+const STATUS_PAGE_ACTIONS = ["list", "stats-reset"] as const;
 const AUDIT_LOG_ACTIONS = ["list"] as const;
 type MonitorAction = (typeof MONITOR_ACTIONS)[number];
 type IncidentAction = (typeof INCIDENT_ACTIONS)[number];
@@ -52,7 +52,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
   // This avoids a circular dependency and keeps backward compatibility
   const tm = tr ?? {
     monitors: {
-      description: "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID). Use verbose=true for full data.",
+      description: "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID), stats-reset (delete check history). Use verbose=true for full data.",
       noMonitors: "No monitors configured.",
       title: "Monitors ({{count}}):",
       idRequired: "id is required for {{action}} action",
@@ -88,7 +88,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     },
     statusPages: {
-      description: "View status pages. Actions: list (show all status pages). Use verbose=true for full data.",
+      description: "View status pages. Actions: list (show all status pages), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
       noPages: "No status pages configured.",
       title: "Status Pages ({{count}}):",
       unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
@@ -120,6 +120,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
           isActive: { type: "boolean", description: "Enable/disable (update)" },
           durationSeconds: { type: "integer", minimum: 60, maximum: 3600, default: 600, description: "Maintenance duration in seconds (maintenance)" },
           end: { type: "boolean", description: "End maintenance (maintenance)" },
+          before: { type: "string", description: "Reset stats before this date (YYYY-MM-DD). Omit for all time." },
           verbose: { type: "boolean", default: false, description: "Full API response" },
         },
       },
@@ -134,6 +135,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         isActive?: boolean;
         durationSeconds?: number;
         end?: boolean;
+        before?: string;
         verbose?: boolean;
       }) => {
         try {
@@ -217,6 +219,11 @@ export function createTools(client: ManakoClient, tr?: Translation) {
               if (!args.id) return error(t(tm.monitors.idRequired, { action: "baseline-reset" }));
               const { monitor } = await client.baselineReset(args.id);
               return text(t(tm.monitors.baselineReset, { name: monitor.name, id: monitor.id }));
+            }
+            case "stats-reset": {
+              if (!args.id) return error(t(tm.monitors.idRequired, { action: "stats-reset" }));
+              const result = await client.resetMonitorStats(args.id, args.before as string | undefined);
+              return text(`Stats reset: ${result.deletedCount} records deleted`);
             }
             default:
               return error(t(tm.monitors.unknownAction, { action: args.action, actions: MONITOR_ACTIONS.join(", ") }));
@@ -313,10 +320,12 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         required: ["action"] as const,
         properties: {
           action: { type: "string", enum: [...STATUS_PAGE_ACTIONS], description: "Operation" },
+          id: { type: "string", description: "Status page ID (stats-reset)" },
+          before: { type: "string", description: "Reset stats before this date (YYYY-MM-DD). Omit for all time." },
           verbose: { type: "boolean", default: false, description: "Full API response" },
         },
       },
-      execute: async (args: { action: string; verbose?: boolean }) => {
+      execute: async (args: { action: string; id?: string; before?: string; verbose?: boolean }) => {
         try {
           switch (args.action) {
             case "list": {
@@ -325,6 +334,11 @@ export function createTools(client: ManakoClient, tr?: Translation) {
               if (statusPages.length === 0) return text(tm.statusPages.noPages);
               const summary = statusPages.map(formatStatusPageCompact).join("\n");
               return text(`${t(tm.statusPages.title, { count: statusPages.length })}\n${summary}`);
+            }
+            case "stats-reset": {
+              if (!args.id) return error("Status page ID is required for stats-reset");
+              const result = await client.resetStatusPageStats(args.id, args.before as string | undefined);
+              return text(`Stats reset: ${result.deletedCount} records deleted`);
             }
             default:
               return error(t(tm.statusPages.unknownAction, { action: args.action, actions: STATUS_PAGE_ACTIONS.join(", ") }));

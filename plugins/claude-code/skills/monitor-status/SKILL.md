@@ -132,6 +132,33 @@ WebChange モニターのベースラインをリセットする。`changeMode: 
 - MCP: `monitors` tool with `action: "baseline-reset"`, `id: "<monitor-id>"`
 - API: `POST /api/v1/monitors/<id>/baseline-reset`
 
+## Stats Reset
+
+モニターの統計データ(monitor_daily_stats)をリセットする。Pro+ プランが必要。
+
+**CLI:**
+```bash
+manako monitors stats-reset <monitor-id>
+manako monitors stats-reset <monitor-id> --before 2024-01-01
+```
+
+**MCP:**
+```
+mcp__manako__monitors(action: "reset-stats", id: "<monitor-id>")
+mcp__manako__monitors(action: "reset-stats", id: "<monitor-id>", before: "2024-01-01")
+```
+
+**API:**
+```bash
+curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
+  https://api.manako.dev/api/v1/monitors/<monitor-id>/stats
+
+curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
+  "https://api.manako.dev/api/v1/monitors/<monitor-id>/stats?before=2024-01-01"
+```
+
+`before` パラメータ(YYYY-MM-DD)を指定すると、その日付より前のデータのみ削除する。省略時は全期間のデータを削除する。
+
 ## Usage Tips
 
 - `manako status` は概要表示に最適。ステータスアイコン付きで一目で状態がわかる
