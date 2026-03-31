@@ -1,6 +1,6 @@
 ---
 name: monitor-status
-description: This skill should be used when the user asks to "モニターの状態を確認", "monitor status", "監視状態を見せて", "モニター一覧", "monitors list", "稼働状況", "XXXモニターの詳細", "monitor detail", "即座チェック", "trigger check", "ヘルスチェック実行", "モニターのステータス". Retrieves and displays Manako monitor status, details, and triggers immediate checks.
+description: This skill should be used when the user asks to "モニターの状態を確認", "monitor status", "監視状態を見せて", "モニター一覧", "monitors list", "稼働状況", "XXXモニターの詳細", "monitor detail", "即座チェック", "trigger check", "ヘルスチェック実行", "モニターのステータス", "モニターを更新", "update monitor", "モニターを削除", "delete monitor". Retrieves and displays Manako monitor status, details, triggers immediate checks, and manages monitor updates/deletions.
 ---
 
 # Monitor Status
@@ -180,3 +180,48 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 **状態確認**: MCP の `status-pages` ツール(`action: list`)でカスタムドメインの状態を確認できます。
 
 **注意**: カスタムドメインの設定・削除はダッシュボードからのみ実行可能です(Pro プラン以上)。
+
+### モニター更新
+
+名前、インターバル、有効/無効を変更する。
+
+**CLI:**
+```bash
+manako monitors update <monitor-id> --name "New Name"
+manako monitors update <monitor-id> --interval 600
+manako monitors update <monitor-id> --pause
+manako monitors update <monitor-id> --resume
+```
+
+**MCP:**
+```
+mcp__manako__monitors(action: "update", id: "<monitor-id>", name: "New Name")
+mcp__manako__monitors(action: "update", id: "<monitor-id>", intervalSeconds: 600)
+mcp__manako__monitors(action: "update", id: "<monitor-id>", isActive: false)
+```
+
+**API:**
+```bash
+curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"New Name"}' \
+  https://api.manako.dev/api/v1/monitors/<monitor-id>
+```
+
+### モニター削除
+
+**CLI:**
+```bash
+manako monitors rm <monitor-id>
+```
+
+**MCP:**
+```
+mcp__manako__monitors(action: "delete", id: "<monitor-id>")
+```
+
+**API:**
+```bash
+curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
+  https://api.manako.dev/api/v1/monitors/<monitor-id>
+```

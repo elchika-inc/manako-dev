@@ -66,6 +66,16 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface WebhookSubscription {
+  id: string;
+  teamId: string;
+  targetUrl: string;
+  events: string[];
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
 // Normalize D1 integer booleans (0/1) to JS booleans
 function normalizeMonitor(m: any): Monitor {
   return { ...m, isActive: !!m.isActive };
@@ -104,6 +114,11 @@ export class ManakoClient {
         errorPayload = { code: "UNKNOWN", message: `Request failed (${res.status})`, status: res.status };
       }
       throw errorPayload;
+    }
+
+    // Handle 204 No Content
+    if (res.status === 204) {
+      return undefined as T;
     }
 
     // E7: Handle success response JSON parse failure
@@ -184,6 +199,11 @@ export class ManakoClient {
     return this.request("DELETE", "/monitors/all/maintenance", notify ? { notify } : undefined);
   }
 
+  async triggerCheck(id: string): Promise<{ result: { status: string; responseTimeMs?: number; errorMessage?: string | null }; monitor: Monitor }> {
+    const res = await this.request<{ result: any; monitor: any }>("POST", `/monitors/${encodeURIComponent(id)}/check`);
+    return { result: res.result, monitor: normalizeMonitor(res.monitor) };
+  }
+
   async baselineReset(id: string): Promise<{ monitor: Monitor }> {
     const res = await this.request<{ monitor: any }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
     return { monitor: normalizeMonitor(res.monitor) };
@@ -261,5 +281,23 @@ export class ManakoClient {
     if (options?.limit) params.append("limit", String(options.limit));
     const query = params.toString();
     return this.request("GET", `/audit-logs${query ? "?" + query : ""}`);
+  }
+
+  // Webhook Subscriptions
+  async listWebhookSubscriptions(): Promise<{ subscriptions: WebhookSubscription[] }> {
+    return this.request("GET", "/webhook-subscriptions");
+  }
+
+  async createWebhookSubscription(data: {
+    targetUrl: string;
+    secret: string;
+    events: string[];
+    description?: string;
+  }): Promise<{ subscription: WebhookSubscription }> {
+    return this.request("POST", "/webhook-subscriptions", data);
+  }
+
+  async deleteWebhookSubscription(id: string): Promise<void> {
+    await this.request("DELETE", `/webhook-subscriptions/${encodeURIComponent(id)}`);
   }
 }

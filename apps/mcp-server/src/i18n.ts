@@ -77,6 +77,26 @@ export interface Translation {
     unknownAction: string;
     upgradePlan: string;
   };
+  notificationChannels: {
+    description: string;
+    testSent: string;
+    idRequired: string;
+    upgradePlan: string;
+    unknownAction: string;
+  };
+  webhookSubscriptions: {
+    description: string;
+    noSubscriptions: string;
+    title: string;
+    created: string;
+    deleted: string;
+    targetUrlRequired: string;
+    secretRequired: string;
+    eventsRequired: string;
+    idRequired: string;
+    unknownAction: string;
+    upgradePlan: string;
+  };
 }
 
 const en: Translation = {
@@ -166,6 +186,26 @@ const en: Translation = {
     title: "Audit Logs ({{count}} entries):",
     unknownAction:
       "Unknown action: {{action}}. Use: {{actions}}",
+    upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+  },
+  notificationChannels: {
+    description: "Test notification channels. Actions: test (send a test notification to verify channel config). Requires channel ID.",
+    testSent: "Test notification sent to channel {{id}}.",
+    idRequired: "id is required for test action",
+    upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+    unknownAction: "Unknown action: {{action}}. Use: test",
+  },
+  webhookSubscriptions: {
+    description: "Manage webhook subscriptions. Actions: list (show all), create (new subscription), delete (remove by ID). Events: incident.created, incident.resolved, webchange.detected.",
+    noSubscriptions: "No webhook subscriptions configured.",
+    title: "Webhook Subscriptions ({{count}}):",
+    created: "Created webhook subscription {{id}} for {{targetUrl}}",
+    deleted: "Webhook subscription {{id}} deleted.",
+    targetUrlRequired: "targetUrl is required for create action (HTTPS URL)",
+    secretRequired: "secret is required for create action (min 16 chars)",
+    eventsRequired: "events is required for create action (e.g. incident.created)",
+    idRequired: "id is required for {{action}} action",
+    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
   },
 };
@@ -267,6 +307,26 @@ const ja: Translation = {
       "不明なアクション: {{action}}。使用可能: {{actions}}",
     upgradePlan:
       "{{msg}}\nプランをアップグレード: {{url}}",
+  },
+  notificationChannels: {
+    description: "通知チャンネルをテストします。アクション: test (テスト通知を送信して設定を確認)。チャンネルIDが必要です。",
+    testSent: "チャンネル {{id}} にテスト通知を送信しました。",
+    idRequired: "test アクションには id が必要です",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
+    unknownAction: "不明なアクション: {{action}}。使用可能: test",
+  },
+  webhookSubscriptions: {
+    description: "Webhookサブスクリプションを管理します。アクション: list (一覧), create (作成), delete (削除)。イベント: incident.created, incident.resolved, webchange.detected。",
+    noSubscriptions: "Webhookサブスクリプションが設定されていません。",
+    title: "Webhookサブスクリプション ({{count}}):",
+    created: "Webhookサブスクリプション {{id}} を作成しました ({{targetUrl}})",
+    deleted: "Webhookサブスクリプション {{id}} を削除しました。",
+    targetUrlRequired: "create アクションには targetUrl が必要です (HTTPS URL)",
+    secretRequired: "create アクションには secret が必要です (16文字以上)",
+    eventsRequired: "create アクションには events が必要です (例: incident.created)",
+    idRequired: "{{action}} アクションには id が必要です",
+    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
   },
 };
 

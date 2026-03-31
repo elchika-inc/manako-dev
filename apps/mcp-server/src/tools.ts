@@ -1,12 +1,14 @@
-import { ManakoClient, type Monitor, type Incident, type StatusPage } from "@manako/api-client";
+import { ManakoClient, type Monitor, type Incident, type StatusPage, type WebhookSubscription } from "@manako/api-client";
 import type { Translation } from "./i18n.js";
 import { t } from "./i18n.js";
 
 // Action constants — single source of truth for schema, switch, error messages
 const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance", "baseline-reset", "stats-reset"] as const;
-const INCIDENT_ACTIONS = ["list", "acknowledge"] as const;
+const INCIDENT_ACTIONS = ["list", "acknowledge", "create", "update", "resolve", "delete"] as const;
 const STATUS_PAGE_ACTIONS = ["list", "stats-reset"] as const;
 const AUDIT_LOG_ACTIONS = ["list"] as const;
+const NOTIFICATION_CHANNEL_ACTIONS = ["test"] as const;
+const WEBHOOK_SUBSCRIPTION_ACTIONS = ["list", "create", "delete"] as const;
 type MonitorAction = (typeof MONITOR_ACTIONS)[number];
 type IncidentAction = (typeof INCIDENT_ACTIONS)[number];
 type AuditLogAction = (typeof AUDIT_LOG_ACTIONS)[number];
@@ -107,6 +109,26 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       description: "View audit logs. Actions: list (show audit trail with optional filters). Use verbose=true for full data.",
       noLogs: "No audit logs found.",
       title: "Audit Logs ({{count}} entries):",
+      unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
+      upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+    },
+    notificationChannels: {
+      description: "Test notification channels. Actions: test (send a test notification to verify channel config). Requires channel ID.",
+      testSent: "Test notification sent to channel {{id}}.",
+      idRequired: "id is required for test action",
+      upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+      unknownAction: "Unknown action: {{action}}. Use: test",
+    },
+    webhookSubscriptions: {
+      description: "Manage webhook subscriptions. Actions: list (show all), create (new subscription), delete (remove by ID). Events: incident.created, incident.resolved, webchange.detected.",
+      noSubscriptions: "No webhook subscriptions configured.",
+      title: "Webhook Subscriptions ({{count}}):",
+      created: "Created webhook subscription {{id}} for {{targetUrl}}",
+      deleted: "Webhook subscription {{id}} deleted.",
+      targetUrlRequired: "targetUrl is required for create action (HTTPS URL)",
+      secretRequired: "secret is required for create action (min 16 chars)",
+      eventsRequired: "events is required for create action (e.g. incident.created)",
+      idRequired: "id is required for {{action}} action",
       unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     },
@@ -440,6 +462,100 @@ export function createTools(client: ManakoClient, tr?: Translation) {
           const msg = err.message || String(err);
           if (err.upgradeUrl) {
             return error(t(tm.auditLogs.upgradePlan, { msg, url: err.upgradeUrl }));
+          }
+          return error(msg);
+        }
+      },
+    },
+    "notification-channels": {
+      description: tm.notificationChannels.description,
+      inputSchema: {
+        type: "object" as const,
+        required: ["action"] as const,
+        properties: {
+          action: { type: "string", enum: [...NOTIFICATION_CHANNEL_ACTIONS], description: "Operation" },
+          id: { type: "string", description: "Notification channel ID" },
+        },
+      },
+      execute: async (args: { action: string; id?: string }) => {
+        try {
+          switch (args.action) {
+            case "test": {
+              if (!args.id) return error(tm.notificationChannels.idRequired);
+              await client.testNotificationChannel(args.id);
+              return text(t(tm.notificationChannels.testSent, { id: args.id }));
+            }
+            default:
+              return error(t(tm.notificationChannels.unknownAction, { action: args.action }));
+          }
+        } catch (err: any) {
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(t(tm.notificationChannels.upgradePlan, { msg, url: err.upgradeUrl }));
+          }
+          return error(msg);
+        }
+      },
+    },
+    "webhook-subscriptions": {
+      description: tm.webhookSubscriptions.description,
+      inputSchema: {
+        type: "object" as const,
+        required: ["action"] as const,
+        properties: {
+          action: { type: "string", enum: [...WEBHOOK_SUBSCRIPTION_ACTIONS], description: "Operation" },
+          id: { type: "string", description: "Subscription ID (delete)" },
+          targetUrl: { type: "string", description: "HTTPS URL to receive webhooks (create)" },
+          secret: { type: "string", description: "Signing secret, min 16 chars (create)" },
+          events: { type: "array", items: { type: "string" }, description: "Event types: incident.created, incident.resolved, webchange.detected (create)" },
+          description: { type: "string", description: "Optional description (create)" },
+          verbose: { type: "boolean", default: false, description: "Full API response" },
+        },
+      },
+      execute: async (args: {
+        action: string;
+        id?: string;
+        targetUrl?: string;
+        secret?: string;
+        events?: string[];
+        description?: string;
+        verbose?: boolean;
+      }) => {
+        try {
+          switch (args.action) {
+            case "list": {
+              const { subscriptions } = await client.listWebhookSubscriptions();
+              if (args.verbose) return text(JSON.stringify(subscriptions, null, 2));
+              if (subscriptions.length === 0) return text(tm.webhookSubscriptions.noSubscriptions);
+              const summary = subscriptions.map((s: WebhookSubscription) =>
+                `${s.id} — ${s.targetUrl} [${s.events.join(", ")}]${s.description ? ` (${s.description})` : ""}`
+              ).join("\n");
+              return text(`${t(tm.webhookSubscriptions.title, { count: subscriptions.length })}\n${summary}`);
+            }
+            case "create": {
+              if (!args.targetUrl) return error(tm.webhookSubscriptions.targetUrlRequired);
+              if (!args.secret) return error(tm.webhookSubscriptions.secretRequired);
+              if (!args.events || args.events.length === 0) return error(tm.webhookSubscriptions.eventsRequired);
+              const { subscription } = await client.createWebhookSubscription({
+                targetUrl: args.targetUrl,
+                secret: args.secret,
+                events: args.events,
+                description: args.description,
+              });
+              return text(t(tm.webhookSubscriptions.created, { id: subscription.id, targetUrl: subscription.targetUrl }));
+            }
+            case "delete": {
+              if (!args.id) return error(t(tm.webhookSubscriptions.idRequired, { action: "delete" }));
+              await client.deleteWebhookSubscription(args.id);
+              return text(t(tm.webhookSubscriptions.deleted, { id: args.id }));
+            }
+            default:
+              return error(t(tm.webhookSubscriptions.unknownAction, { action: args.action, actions: WEBHOOK_SUBSCRIPTION_ACTIONS.join(", ") }));
+          }
+        } catch (err: any) {
+          const msg = err.message || String(err);
+          if (err.upgradeUrl) {
+            return error(t(tm.webhookSubscriptions.upgradePlan, { msg, url: err.upgradeUrl }));
           }
           return error(msg);
         }
