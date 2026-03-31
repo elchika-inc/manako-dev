@@ -146,10 +146,22 @@ async function handleAuth(env: Env, sessionId: string, params: any, tr: Translat
   }
   const { accessToken, user } = await loginRes.json() as { accessToken: string; user: { email: string } };
 
-  // Step 2: Create API key
-  const keyRes = await fetch(`${env.API_URL}/dashboard/api-keys`, {
+  // Step 2: Obtain sudo token (API key creation requires sudoGuard)
+  const sudoRes = await fetch(`${env.API_URL}/dashboard/sudo/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
+    body: JSON.stringify({ password }),
+  });
+  if (!sudoRes.ok) {
+    const err: any = await sudoRes.json().catch(() => ({}));
+    return { content: [{ type: "text", text: `Error: ${err?.error?.message || t(tr.auth.loginFailed, { status: sudoRes.status })}` }], isError: true };
+  }
+  const { sudoToken } = await sudoRes.json() as { sudoToken: string };
+
+  // Step 3: Create API key with sudo token
+  const keyRes = await fetch(`${env.API_URL}/dashboard/api-keys`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}`, "X-Sudo-Token": sudoToken },
     body: JSON.stringify({ name: "MCP Session", scopes: ["read", "write"] }),
   });
   if (!keyRes.ok) {
@@ -158,7 +170,7 @@ async function handleAuth(env: Env, sessionId: string, params: any, tr: Translat
   }
   const { apiKey: keyData } = await keyRes.json() as { apiKey: { key: string } };
 
-  // Step 3: Store in KV
+  // Step 4: Store in KV
   await env.SESSION_KV.put(`session:${sessionId}`, keyData.key, { expirationTtl: SESSION_TTL });
 
   return { content: [{ type: "text", text: t(tr.auth.authenticated, { email: user.email }) }] };
