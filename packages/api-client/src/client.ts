@@ -30,6 +30,7 @@ export interface Incident {
   status: IncidentStatus;
   title: string | null;
   cause: string | null;
+  statusPageIds?: string[];
   startedAt: string;
   resolvedAt: string | null;
 }
@@ -229,11 +230,11 @@ export class ManakoClient {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}/acknowledge`);
   }
 
-  async createIncident(data: { title: string; cause?: string }): Promise<{ incident: Incident }> {
+  async createIncident(data: { title: string; cause?: string; statusPageIds?: string[] }): Promise<{ incident: Incident }> {
     return this.request("POST", "/incidents", data);
   }
 
-  async updateIncident(id: string, data: { title?: string; cause?: string }): Promise<{ incident: Incident }> {
+  async updateIncident(id: string, data: { title?: string; cause?: string; statusPageIds?: string[] }): Promise<{ incident: Incident }> {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}`, data);
   }
 
