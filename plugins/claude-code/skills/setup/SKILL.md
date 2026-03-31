@@ -107,6 +107,16 @@ CLI: `manako status`
 MCP: `mcp__manako__monitors(action: "list")`
 API: `curl -H "Authorization: Bearer $MANAKO_API_KEY" https://api.manako.dev/api/v1/monitors`
 
+## Logout
+
+認証情報をクリアするには:
+
+```bash
+manako logout
+```
+
+`~/.manako.json` から認証情報が削除される。
+
 ## Troubleshooting
 
 | 問題 | 対処 |
