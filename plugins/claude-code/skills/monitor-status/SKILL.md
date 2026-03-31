@@ -167,3 +167,16 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 - モニター ID がわからない場合は先に `manako monitors list` で一覧取得
 - WebChange モニターで `screenshot` や `both` を利用するには Paid プランが必要 (最小間隔 1800 秒)
 - Free プランでは checkType `text` のみ利用可能
+
+## Custom Domain for Status Pages
+
+ステータスページにカスタムドメインを設定する手順:
+
+1. **ダッシュボード**でステータスページの編集画面を開く
+2. カスタムドメインセクションでドメイン(例: `status.example.com`)を入力し「有効化」
+3. 表示されたDNSレコード(CNAME + TXT/CNAME検証)をDNSに追加
+4. DNS反映後「検証」をクリック → SSL証明書が自動発行
+
+**状態確認**: MCP の `status-pages` ツール(`action: list`)でカスタムドメインの状態を確認できます。
+
+**注意**: カスタムドメインの設定・削除はダッシュボードからのみ実行可能です(Pro プラン以上)。

@@ -49,6 +49,7 @@ export interface StatusPage {
   description: string | null;
   isPublic: boolean;
   customDomain: string | null;
+  customDomainStatus: string | null;
   createdAt: string;
 }
 

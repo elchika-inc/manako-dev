@@ -68,6 +68,7 @@ export interface Translation {
     title: string;
     unknownAction: string;
     upgradePlan: string;
+    customDomainHint: string;
   };
   auditLogs: {
     description: string;
@@ -150,12 +151,13 @@ const en: Translation = {
   },
   statusPages: {
     description:
-      "View status pages. Actions: list (show all status pages), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
+      "View status pages and custom domain status. Actions: list (show all status pages with custom domain info), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
     noPages: "No status pages configured.",
     title: "Status Pages ({{count}}):",
     unknownAction:
       "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+    customDomainHint: "Custom domain can be configured from the dashboard.",
   },
   auditLogs: {
     description:
@@ -247,13 +249,14 @@ const ja: Translation = {
   },
   statusPages: {
     description:
-      "ステータスページを表示します。アクション: list (全ステータスページ一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
+      "ステータスページとカスタムドメインの状態を表示します。アクション: list (全ステータスページとカスタムドメイン情報一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
     noPages: "ステータスページが設定されていません。",
     title: "ステータスページ ({{count}}):",
     unknownAction:
       "不明なアクション: {{action}}。使用可能: {{actions}}",
     upgradePlan:
       "{{msg}}\nプランをアップグレード: {{url}}",
+    customDomainHint: "カスタムドメインはダッシュボードから設定できます。",
   },
   auditLogs: {
     description:

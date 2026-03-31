@@ -31,7 +31,11 @@ function formatIncidentCompact(i: Incident): string {
 
 function formatStatusPageCompact(sp: StatusPage): string {
   const visibility = sp.isPublic ? "public" : "private";
-  return `${sp.title} — /${sp.slug} (${visibility})`;
+  let line = `${sp.title} — /${sp.slug} (${visibility})`;
+  if (sp.customDomain) {
+    line += ` | ${sp.customDomain} [${sp.customDomainStatus ?? "unknown"}]`;
+  }
+  return line;
 }
 
 function formatAuditLogCompact(log: any): string {
@@ -92,11 +96,12 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     },
     statusPages: {
-      description: "View status pages. Actions: list (show all status pages), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
+      description: "View status pages and custom domain status. Actions: list (show all status pages with custom domain info), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
       noPages: "No status pages configured.",
       title: "Status Pages ({{count}}):",
       unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
+      customDomainHint: "Custom domain can be configured from the dashboard.",
     },
     auditLogs: {
       description: "View audit logs. Actions: list (show audit trail with optional filters). Use verbose=true for full data.",
@@ -365,7 +370,9 @@ export function createTools(client: ManakoClient, tr?: Translation) {
               if (args.verbose) return text(JSON.stringify(statusPages, null, 2));
               if (statusPages.length === 0) return text(tm.statusPages.noPages);
               const summary = statusPages.map(formatStatusPageCompact).join("\n");
-              return text(`${t(tm.statusPages.title, { count: statusPages.length })}\n${summary}`);
+              const hasNoDomain = statusPages.some((sp) => !sp.customDomain);
+              const hint = hasNoDomain ? `\n\n${tm.statusPages.customDomainHint}` : "";
+              return text(`${t(tm.statusPages.title, { count: statusPages.length })}\n${summary}${hint}`);
             }
             case "stats-reset": {
               if (!args.id) return error("Status page ID is required for stats-reset");
