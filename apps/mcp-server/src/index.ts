@@ -105,12 +105,19 @@ function getAuthTool(tr: Translation) {
   return {
     name: "auth",
     description: tr.auth.description,
+    inputSchema: { type: "object" as const, properties: {} },
+  };
+}
+
+function getAuthStatusTool(tr: Translation) {
+  return {
+    name: "auth_status",
+    description: tr.auth.authStatusDescription,
     inputSchema: {
       type: "object" as const,
-      required: ["email", "password"] as const,
+      required: ["deviceCode"] as const,
       properties: {
-        email: { type: "string", description: tr.auth.emailDesc },
-        password: { type: "string", description: tr.auth.passwordDesc },
+        deviceCode: { type: "string", description: tr.auth.authStatusDeviceCodeDesc },
       },
     },
   };
@@ -128,52 +135,85 @@ async function resolveApiKey(c: { env: Env; req: { header: (name: string) => str
   return null;
 }
 
-async function handleAuth(env: Env, sessionId: string, params: any, tr: Translation): Promise<{ content: { type: string; text: string }[]; isError?: boolean }> {
-  const { email, password } = params?.arguments ?? {};
-  if (!email || !password) {
-    return { content: [{ type: "text", text: `Error: ${tr.auth.emailPasswordRequired}` }], isError: true };
-  }
-
-  // Step 1: Login -> JWT
-  const loginRes = await fetch(`${env.API_URL}/auth/login`, {
+async function handleAuth(
+  env: Env,
+  sessionId: string,
+  tr: Translation,
+): Promise<{ content: { type: string; text: string }[]; isError?: boolean }> {
+  const codeRes = await fetch(`${env.API_URL}/auth/device/code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ client: "mcp" }),
   });
-  if (!loginRes.ok) {
-    const err: any = await loginRes.json().catch(() => ({}));
-    return { content: [{ type: "text", text: `Error: ${err?.error?.message || t(tr.auth.loginFailed, { status: loginRes.status })}` }], isError: true };
-  }
-  const { accessToken, user } = await loginRes.json() as { accessToken: string; user: { email: string } };
 
-  // Step 2: Obtain sudo token (API key creation requires sudoGuard)
-  const sudoRes = await fetch(`${env.API_URL}/dashboard/sudo/verify`, {
+  if (!codeRes.ok) {
+    return {
+      content: [{
+        type: "text",
+        text: `Error: ${t(tr.auth.deviceCodeFailed, { status: String(codeRes.status) })}`,
+      }],
+      isError: true,
+    };
+  }
+
+  const { deviceCode, userCode, verificationUrlComplete } =
+    (await codeRes.json()) as { deviceCode: string; userCode: string; verificationUrlComplete: string };
+
+  return {
+    content: [{
+      type: "text",
+      text: t(tr.auth.deviceCodeMessage, { url: verificationUrlComplete, code: userCode, deviceCode }),
+    }],
+  };
+}
+
+async function handleAuthStatus(
+  env: Env,
+  sessionId: string,
+  params: any,
+  tr: Translation,
+): Promise<{ content: { type: string; text: string }[]; isError?: boolean }> {
+  const { deviceCode } = params?.arguments ?? {};
+  if (!deviceCode) {
+    return {
+      content: [{ type: "text", text: "Error: deviceCode is required" }],
+      isError: true,
+    };
+  }
+
+  const tokenRes = await fetch(`${env.API_URL}/auth/device/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-    body: JSON.stringify({ password }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceCode }),
   });
-  if (!sudoRes.ok) {
-    const err: any = await sudoRes.json().catch(() => ({}));
-    return { content: [{ type: "text", text: `Error: ${err?.error?.message || t(tr.auth.loginFailed, { status: sudoRes.status })}` }], isError: true };
+
+  if (tokenRes.status === 200) {
+    const { apiKey } = (await tokenRes.json()) as { apiKey: string };
+    if (!env.SESSION_KV) {
+      return {
+        content: [{ type: "text", text: "Error: Session storage unavailable (SESSION_KV not configured)" }],
+        isError: true,
+      };
+    }
+    await env.SESSION_KV.put(`session:${sessionId}`, apiKey, {
+      expirationTtl: SESSION_TTL,
+    });
+    return { content: [{ type: "text", text: tr.auth.authStatusApproved }] };
   }
-  const { sudoToken } = await sudoRes.json() as { sudoToken: string };
 
-  // Step 3: Create API key with sudo token
-  const keyRes = await fetch(`${env.API_URL}/dashboard/api-keys`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}`, "X-Sudo-Token": sudoToken },
-    body: JSON.stringify({ name: "MCP Session", scopes: ["read", "write"] }),
-  });
-  if (!keyRes.ok) {
-    const err: any = await keyRes.json().catch(() => ({}));
-    return { content: [{ type: "text", text: `Error: ${err?.error?.message || t(tr.auth.keyCreationFailed, { status: keyRes.status })}` }], isError: true };
+  const body = (await tokenRes.json().catch(() => ({}))) as any;
+  const code = body?.error?.code;
+
+  if (code === "AUTHORIZATION_PENDING") {
+    return { content: [{ type: "text", text: tr.auth.authStatusPending }] };
   }
-  const { apiKey: keyData } = await keyRes.json() as { apiKey: { key: string } };
-
-  // Step 4: Store in KV
-  await env.SESSION_KV.put(`session:${sessionId}`, keyData.key, { expirationTtl: SESSION_TTL });
-
-  return { content: [{ type: "text", text: t(tr.auth.authenticated, { email: user.email }) }] };
+  if (code === "EXPIRED_TOKEN") {
+    return { content: [{ type: "text", text: tr.auth.authStatusExpired }], isError: true };
+  }
+  return {
+    content: [{ type: "text", text: t(tr.auth.authStatusError, { message: body?.error?.message || "Unknown" }) }],
+    isError: true,
+  };
 }
 
 app.post("/mcp", async (c) => {
@@ -217,7 +257,7 @@ app.post("/mcp", async (c) => {
       return c.json(jsonrpcResult(id, {}));
 
     case "tools/list": {
-      const allTools = [getAuthTool(tr), ...getToolList(tr)];
+      const allTools = [getAuthTool(tr), getAuthStatusTool(tr), ...getToolList(tr)];
       return c.json(jsonrpcResult(id, { tools: allTools }));
     }
 
@@ -232,8 +272,31 @@ app.post("/mcp", async (c) => {
         if (!sessionId) {
           return c.json(jsonrpcResult(id, { content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }], isError: true }));
         }
-        const result = await handleAuth(c.env, sessionId, params, tr);
-        return c.json(jsonrpcResult(id, result));
+        try {
+          const result = await handleAuth(c.env, sessionId, tr);
+          return c.json(jsonrpcResult(id, result));
+        } catch (err: any) {
+          return c.json(jsonrpcResult(id, {
+            content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+            isError: true,
+          }));
+        }
+      }
+
+      // auth_status tool — no API key required
+      if (toolName === "auth_status") {
+        if (!sessionId) {
+          return c.json(jsonrpcResult(id, { content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }], isError: true }));
+        }
+        try {
+          const result = await handleAuthStatus(c.env, sessionId, params, tr);
+          return c.json(jsonrpcResult(id, result));
+        } catch (err: any) {
+          return c.json(jsonrpcResult(id, {
+            content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+            isError: true,
+          }));
+        }
       }
 
       // All other tools require API key (header or session)

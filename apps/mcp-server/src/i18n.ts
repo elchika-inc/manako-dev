@@ -6,14 +6,16 @@ export interface Translation {
   };
   auth: {
     description: string;
-    emailDesc: string;
-    passwordDesc: string;
+    authStatusDescription: string;
+    authStatusDeviceCodeDesc: string;
     missingApiKey: string;
     invalidJson: string;
-    emailPasswordRequired: string;
-    loginFailed: string;
-    keyCreationFailed: string;
-    authenticated: string;
+    deviceCodeFailed: string;
+    deviceCodeMessage: string;
+    authStatusPending: string;
+    authStatusApproved: string;
+    authStatusExpired: string;
+    authStatusError: string;
     noSession: string;
     notAuthenticated: string;
     parseError: string;
@@ -105,16 +107,19 @@ const en: Translation = {
   },
   auth: {
     description:
-      "Login to Manako with email and password. Creates an API key for this session. Must be called before using other tools if no API key is provided via Authorization header.",
-    emailDesc: "Account email address",
-    passwordDesc: "Account password",
+      "Start Device Code Flow authentication. Returns a URL and code for the user to approve in their browser. After approval, call auth_status with the deviceCode to complete authentication.",
+    authStatusDescription:
+      "Check if the user has approved the Device Code Flow request. If approved, stores the API key in the session. Call this after auth tool returns a deviceCode.",
+    authStatusDeviceCodeDesc: "The device code returned by the auth tool",
     missingApiKey: "Missing or invalid API key",
     invalidJson: "Invalid JSON in request body",
-    emailPasswordRequired: "email and password are required",
-    loginFailed: "Login failed ({{status}})",
-    keyCreationFailed: "API key creation failed ({{status}})",
-    authenticated:
-      "Authenticated as {{email}}. Session active for 24 hours.",
+    deviceCodeFailed: "Failed to start device code flow ({{status}})",
+    deviceCodeMessage:
+      "Please open the following URL in your browser to authenticate:\n{{url}}\n\nYour user code: {{code}}\n\nAfter approving, call auth_status with deviceCode: {{deviceCode}}",
+    authStatusPending: "Authorization pending. Please approve the request in your browser, then try again.",
+    authStatusApproved: "Authentication successful. You can now use other tools.",
+    authStatusExpired: "Device code has expired. Please call auth again to restart.",
+    authStatusError: "Authentication error: {{message}}",
     noSession: "No session. Call initialize first.",
     notAuthenticated:
       "Not authenticated. Use the auth tool to login, or provide an API key via Authorization header.",
@@ -216,16 +221,19 @@ const ja: Translation = {
   },
   auth: {
     description:
-      "メールアドレスとパスワードでManakoにログインします。このセッション用のAPIキーを作成します。Authorization ヘッダーでAPIキーが提供されていない場合、他のツールを使用する前に呼び出す必要があります。",
-    emailDesc: "アカウントのメールアドレス",
-    passwordDesc: "アカウントのパスワード",
+      "デバイスコードフロー認証を開始します。ブラウザで承認するためのURLとコードを返します。承認後、deviceCodeを使ってauth_statusを呼び出して認証を完了してください。",
+    authStatusDescription:
+      "デバイスコードフローのリクエストが承認されたか確認します。承認済みの場合、APIキーをセッションに保存します。authツールがdeviceCodeを返した後に呼び出してください。",
+    authStatusDeviceCodeDesc: "authツールが返したデバイスコード",
     missingApiKey: "APIキーが無効または未設定です",
     invalidJson: "リクエストボディのJSONが不正です",
-    emailPasswordRequired: "メールアドレスとパスワードは必須です",
-    loginFailed: "ログインに失敗しました ({{status}})",
-    keyCreationFailed: "APIキーの作成に失敗しました ({{status}})",
-    authenticated:
-      "{{email}} として認証されました。セッションは24時間有効です。",
+    deviceCodeFailed: "デバイスコードフローの開始に失敗しました ({{status}})",
+    deviceCodeMessage:
+      "以下のURLをブラウザで開いて認証してください:\n{{url}}\n\nユーザーコード: {{code}}\n\n承認後、deviceCode: {{deviceCode}} を使ってauth_statusを呼び出してください",
+    authStatusPending: "承認待ちです。ブラウザでリクエストを承認してから再試行してください。",
+    authStatusApproved: "認証に成功しました。他のツールを使用できます。",
+    authStatusExpired: "デバイスコードの有効期限が切れました。再度authを呼び出してください。",
+    authStatusError: "認証エラー: {{message}}",
     noSession:
       "セッションがありません。先に initialize を呼び出してください。",
     notAuthenticated:

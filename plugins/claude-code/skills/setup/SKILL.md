@@ -49,21 +49,26 @@ npm install -g manako
 
 2 つの認証方法がある:
 
-**API Key 認証 (推奨):**
+**Device Code Flow (推奨):**
+
+```bash
+manako login
+```
+
+ブラウザが自動で開き、表示されたコードを確認して承認する。承認完了後、API Key が自動的に `~/.manako.json` に保存される。
+
+1. `manako login` を実行するとデバイスコードが発行される
+2. ブラウザで `https://manako.dev/device` が開く
+3. 画面に表示された 8 桁のコード (例: ABCD-EFGH) を確認する
+4. ブラウザで承認すると CLI が自動的に認証完了する
+
+**API Key 直接入力:**
 
 ```bash
 manako login --api-key mk_your_api_key_here
 ```
 
-API Key は Manako ダッシュボード (Settings > API Keys) で発行する。
-
-**Email/Password 認証:**
-
-```bash
-manako login --email user@example.com --password yourpassword
-```
-
-自動で API Key が生成され `~/.manako.json` に保存される。
+API Key は Manako ダッシュボード (Settings > API Keys) で手動発行する。
 
 ### Step 3: MCP Server (オプション)
 
@@ -71,15 +76,21 @@ CLI が使えない環境では MCP Server を利用する。この Plugin の `
 
 MCP ツールが利用可能か確認するには、ツール一覧に `mcp__manako__monitors` が存在するか確認する。
 
-**MCP セッション認証:**
+**MCP Device Code Flow 認証:**
 
-MCP ツールが利用可能な場合、`mcp__manako__auth` ツールで認証:
+MCP ツールが利用可能な場合、`mcp__manako__auth` ツールで認証を開始する:
 
 ```
-mcp__manako__auth(email: "user@example.com", password: "yourpassword")
+mcp__manako__auth(action: "start")
 ```
 
-セッションは 24 時間有効。
+ブラウザで承認 URL が表示される。ユーザーが承認後、`auth_status` ツールで状態を確認:
+
+```
+mcp__manako__auth(action: "status")
+```
+
+承認完了後は API Key が自動保存される。
 
 **MCP API Key 認証:**
 
