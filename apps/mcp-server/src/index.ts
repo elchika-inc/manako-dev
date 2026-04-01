@@ -64,11 +64,11 @@ app.post("/tools/:toolName", async (c) => {
   }
 
   try {
-    const result = await tool.execute(args as any);
+    const result = await tool.execute(args as Record<string, unknown>);
     return c.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({
-      content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+      content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
       isError: true,
     });
   }
@@ -170,10 +170,11 @@ async function handleAuth(
 async function handleAuthStatus(
   env: Env,
   sessionId: string,
-  params: any,
+  params: Record<string, unknown> | undefined,
   tr: Translation,
 ): Promise<{ content: { type: string; text: string }[]; isError?: boolean }> {
-  const { deviceCode } = params?.arguments ?? {};
+  const args = (params?.arguments ?? {}) as Record<string, unknown>;
+  const { deviceCode } = args;
   if (!deviceCode) {
     return {
       content: [{ type: "text", text: "Error: deviceCode is required" }],
@@ -201,7 +202,7 @@ async function handleAuthStatus(
     return { content: [{ type: "text", text: tr.auth.authStatusApproved }] };
   }
 
-  const body = (await tokenRes.json().catch(() => ({}))) as any;
+  const body = (await tokenRes.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
   const code = body?.error?.code;
 
   if (code === "AUTHORIZATION_PENDING") {
@@ -220,7 +221,7 @@ app.post("/mcp", async (c) => {
   const lang = getLang(c.req);
   const tr = getTranslation(lang);
 
-  let body: any;
+  let body: { jsonrpc?: string; id?: string | number; method?: string; params?: Record<string, unknown> };
   try {
     body = await c.req.json();
   } catch {
@@ -275,9 +276,9 @@ app.post("/mcp", async (c) => {
         try {
           const result = await handleAuth(c.env, sessionId, tr);
           return c.json(jsonrpcResult(id, result));
-        } catch (err: any) {
+        } catch (err: unknown) {
           return c.json(jsonrpcResult(id, {
-            content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+            content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
             isError: true,
           }));
         }
@@ -291,9 +292,9 @@ app.post("/mcp", async (c) => {
         try {
           const result = await handleAuthStatus(c.env, sessionId, params, tr);
           return c.json(jsonrpcResult(id, result));
-        } catch (err: any) {
+        } catch (err: unknown) {
           return c.json(jsonrpcResult(id, {
-            content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+            content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
             isError: true,
           }));
         }
@@ -315,11 +316,11 @@ app.post("/mcp", async (c) => {
         return c.json(jsonrpcError(id, -32601, t(tr.auth.unknownTool, { name: toolName })));
       }
       try {
-        const result = await tool.execute((params?.arguments ?? {}) as any);
+        const result = await tool.execute((params?.arguments ?? {}) as Record<string, unknown>);
         return c.json(jsonrpcResult(id, result));
-      } catch (err: any) {
+      } catch (err: unknown) {
         return c.json(jsonrpcResult(id, {
-          content: [{ type: "text", text: `Error: ${err.message || String(err)}` }],
+          content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
           isError: true,
         }));
       }

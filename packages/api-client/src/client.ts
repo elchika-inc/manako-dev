@@ -79,8 +79,13 @@ export interface WebhookSubscription {
   createdAt: string;
 }
 
+/** Raw monitor shape from D1 — isActive may be 0/1 instead of boolean */
+interface RawMonitor extends Omit<Monitor, "isActive"> {
+  isActive: boolean | number;
+}
+
 // Normalize D1 integer booleans (0/1) to JS booleans
-function normalizeMonitor(m: any): Monitor {
+function normalizeMonitor(m: RawMonitor): Monitor {
   return { ...m, isActive: !!m.isActive };
 }
 
@@ -107,9 +112,9 @@ export class ManakoClient {
       // E6: Handle non-JSON and unexpected error response formats
       let errorPayload: ApiError;
       try {
-        const errBody: any = await res.json();
+        const errBody = await res.json() as { error?: { code?: string; message?: string; status?: number; upgradeUrl?: string } };
         if (errBody?.error?.code && errBody?.error?.message) {
-          errorPayload = errBody.error;
+          errorPayload = errBody.error as ApiError;
         } else {
           errorPayload = { code: "UNKNOWN", message: `Request failed (${res.status})`, status: res.status };
         }
@@ -134,12 +139,12 @@ export class ManakoClient {
 
   // Monitors
   async listMonitors(): Promise<{ monitors: Monitor[] }> {
-    const res = await this.request<{ monitors: any[] }>("GET", "/monitors");
+    const res = await this.request<{ monitors: RawMonitor[] }>("GET", "/monitors");
     return { monitors: res.monitors.map(normalizeMonitor) };
   }
 
   async getMonitor(id: string): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: any }>("GET", `/monitors/${encodeURIComponent(id)}`);
+    const res = await this.request<{ monitor: RawMonitor }>("GET", `/monitors/${encodeURIComponent(id)}`);
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -149,7 +154,7 @@ export class ManakoClient {
     config: Record<string, unknown>;
     intervalSeconds?: number;
   }): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: any }>("POST", "/monitors", data);
+    const res = await this.request<{ monitor: RawMonitor }>("POST", "/monitors", data);
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -166,7 +171,7 @@ export class ManakoClient {
       isActive?: boolean;
     },
   ): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: any }>("PUT", `/monitors/${encodeURIComponent(id)}`, data);
+    const res = await this.request<{ monitor: RawMonitor }>("PUT", `/monitors/${encodeURIComponent(id)}`, data);
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -203,12 +208,12 @@ export class ManakoClient {
   }
 
   async triggerCheck(id: string): Promise<{ result: { status: string; responseTimeMs?: number; errorMessage?: string | null }; monitor: Monitor }> {
-    const res = await this.request<{ result: any; monitor: any }>("POST", `/monitors/${encodeURIComponent(id)}/check`);
+    const res = await this.request<{ result: { status: string; responseTimeMs?: number; errorMessage?: string | null }; monitor: RawMonitor }>("POST", `/monitors/${encodeURIComponent(id)}/check`);
     return { result: res.result, monitor: normalizeMonitor(res.monitor) };
   }
 
   async baselineReset(id: string): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: any }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
+    const res = await this.request<{ monitor: RawMonitor }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -250,7 +255,7 @@ export class ManakoClient {
 
   // Services
   async listServices(): Promise<{ services: Service[] }> {
-    const res = await this.request<{ services: any[] }>("GET", "/services");
+    const res = await this.request<{ services: (Omit<Service, "isPublic"> & { isPublic: boolean | number })[] }>("GET", "/services");
     return { services: res.services.map((s) => ({ ...s, isPublic: !!s.isPublic })) };
   }
 
