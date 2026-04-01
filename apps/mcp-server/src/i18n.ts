@@ -62,9 +62,9 @@ export interface Translation {
     idRequired: string;
     upgradePlan: string;
   };
-  statusPages: {
+  services: {
     description: string;
-    noPages: string;
+    noServices: string;
     title: string;
     unknownAction: string;
     upgradePlan: string;
@@ -169,11 +169,11 @@ const en: Translation = {
     idRequired: "id is required for {{action}} action",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
   },
-  statusPages: {
+  services: {
     description:
-      "View status pages and custom domain status. Actions: list (show all status pages with custom domain info), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
-    noPages: "No status pages configured.",
-    title: "Status Pages ({{count}}):",
+      "View services and custom domain status. Actions: list (show all services with custom domain info), stats-reset (delete check history by service ID). Use verbose=true for full data.",
+    noServices: "No services configured.",
+    title: "Services ({{count}}):",
     unknownAction:
       "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
@@ -287,11 +287,11 @@ const ja: Translation = {
     upgradePlan:
       "{{msg}}\nプランをアップグレード: {{url}}",
   },
-  statusPages: {
+  services: {
     description:
-      "ステータスページとカスタムドメインの状態を表示します。アクション: list (全ステータスページとカスタムドメイン情報一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
-    noPages: "ステータスページが設定されていません。",
-    title: "ステータスページ ({{count}}):",
+      "サービスとカスタムドメインの状態を表示します。アクション: list (全サービスとカスタムドメイン情報一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
+    noServices: "サービスが設定されていません。",
+    title: "サービス ({{count}}):",
     unknownAction:
       "不明なアクション: {{action}}。使用可能: {{actions}}",
     upgradePlan:

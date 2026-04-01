@@ -30,7 +30,7 @@ export interface Incident {
   status: IncidentStatus;
   title: string | null;
   cause: string | null;
-  statusPageIds?: string[];
+  serviceIds?: string[];
   startedAt: string;
   resolvedAt: string | null;
 }
@@ -42,16 +42,18 @@ export interface ApiError {
   upgradeUrl?: string;
 }
 
-export interface StatusPage {
+export interface Service {
   id: string;
   teamId: string;
   slug: string;
-  title: string;
+  name: string;
   description: string | null;
   isPublic: boolean;
+  maintenanceUntil: string | null;
   customDomain: string | null;
   customDomainStatus: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuditLog {
@@ -215,9 +217,9 @@ export class ManakoClient {
     return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/stats${query}`);
   }
 
-  async resetStatusPageStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
+  async resetServiceStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
     const query = before ? `?before=${encodeURIComponent(before)}` : "";
-    return this.request("DELETE", `/status-pages/${encodeURIComponent(id)}/stats${query}`);
+    return this.request("DELETE", `/services/${encodeURIComponent(id)}/stats${query}`);
   }
 
   // Incidents
@@ -230,11 +232,11 @@ export class ManakoClient {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}/acknowledge`);
   }
 
-  async createIncident(data: { title: string; cause?: string; statusPageIds?: string[] }): Promise<{ incident: Incident }> {
+  async createIncident(data: { title: string; cause?: string; serviceIds?: string[] }): Promise<{ incident: Incident }> {
     return this.request("POST", "/incidents", data);
   }
 
-  async updateIncident(id: string, data: { title?: string; cause?: string; statusPageIds?: string[] }): Promise<{ incident: Incident }> {
+  async updateIncident(id: string, data: { title?: string; cause?: string; serviceIds?: string[] }): Promise<{ incident: Incident }> {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}`, data);
   }
 
@@ -246,10 +248,10 @@ export class ManakoClient {
     await this.request("DELETE", `/incidents/${encodeURIComponent(id)}`);
   }
 
-  // Status Pages
-  async listStatusPages(): Promise<{ statusPages: StatusPage[] }> {
-    const res = await this.request<{ statusPages: any[] }>("GET", "/status-pages");
-    return { statusPages: res.statusPages.map((sp) => ({ ...sp, isPublic: !!sp.isPublic })) };
+  // Services
+  async listServices(): Promise<{ services: Service[] }> {
+    const res = await this.request<{ services: any[] }>("GET", "/services");
+    return { services: res.services.map((s) => ({ ...s, isPublic: !!s.isPublic })) };
   }
 
   // Notification Channels

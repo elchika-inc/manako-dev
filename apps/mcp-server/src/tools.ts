@@ -1,11 +1,11 @@
-import { ManakoClient, type Monitor, type Incident, type StatusPage, type WebhookSubscription } from "@manako/api-client";
+import { ManakoClient, type Monitor, type Incident, type Service, type WebhookSubscription } from "@manako/api-client";
 import type { Translation } from "./i18n.js";
 import { t } from "./i18n.js";
 
 // Action constants — single source of truth for schema, switch, error messages
 const MONITOR_ACTIONS = ["list", "get", "create", "update", "delete", "check", "maintenance", "baseline-reset", "stats-reset"] as const;
 const INCIDENT_ACTIONS = ["list", "acknowledge", "create", "update", "resolve", "delete"] as const;
-const STATUS_PAGE_ACTIONS = ["list", "stats-reset"] as const;
+const SERVICE_ACTIONS = ["list", "stats-reset"] as const;
 const AUDIT_LOG_ACTIONS = ["list"] as const;
 const NOTIFICATION_CHANNEL_ACTIONS = ["test"] as const;
 const WEBHOOK_SUBSCRIPTION_ACTIONS = ["list", "create", "delete"] as const;
@@ -31,11 +31,11 @@ function formatIncidentCompact(i: Incident): string {
   return `${emoji} [${i.status}] ${i.title || i.id.slice(0, 12)} — started ${started}${i.resolvedAt ? `, resolved ${new Date(i.resolvedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}` : ""}`;
 }
 
-function formatStatusPageCompact(sp: StatusPage): string {
-  const visibility = sp.isPublic ? "public" : "private";
-  let line = `${sp.title} — /${sp.slug} (${visibility})`;
-  if (sp.customDomain) {
-    line += ` | ${sp.customDomain} [${sp.customDomainStatus ?? "unknown"}]`;
+function formatServiceCompact(s: Service): string {
+  const visibility = s.isPublic ? "public" : "private";
+  let line = `${s.name} — /${s.slug} (${visibility})`;
+  if (s.customDomain) {
+    line += ` | ${s.customDomain} [${s.customDomainStatus ?? "unknown"}]`;
   }
   return line;
 }
@@ -97,10 +97,10 @@ export function createTools(client: ManakoClient, tr?: Translation) {
       idRequired: "id is required for {{action}} action",
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     },
-    statusPages: {
-      description: "View status pages and custom domain status. Actions: list (show all status pages with custom domain info), stats-reset (delete check history by status page ID). Use verbose=true for full data.",
-      noPages: "No status pages configured.",
-      title: "Status Pages ({{count}}):",
+    services: {
+      description: "View services and custom domain status. Actions: list (show all services with custom domain info), stats-reset (delete check history by service ID). Use verbose=true for full data.",
+      noServices: "No services configured.",
+      title: "Services ({{count}}):",
       unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
       upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
       customDomainHint: "Custom domain can be configured from the dashboard.",
@@ -307,7 +307,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
           status: { type: "string", enum: ["ongoing", "resolved", "acknowledged"], description: "Filter (list)" },
           title: { type: "string", description: "Incident title (create)" },
           cause: { type: "string", description: "Description or cause (create/update/resolve)" },
-          statusPageIds: { type: "array", items: { type: "string" }, description: "Status page IDs to display the incident on (create/update)" },
+          serviceIds: { type: "array", items: { type: "string" }, description: "Service IDs to display the incident on (create/update)" },
           verbose: { type: "boolean", default: false, description: "Full API response" },
         },
       },
@@ -317,7 +317,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         status?: string;
         title?: string;
         cause?: string;
-        statusPageIds?: string[];
+        serviceIds?: string[];
         verbose?: boolean;
       }) => {
         try {
@@ -340,16 +340,16 @@ export function createTools(client: ManakoClient, tr?: Translation) {
             }
             case "create": {
               if (!args.title) return error(tm.incidents.titleRequired);
-              const { incident } = await client.createIncident({ title: args.title, cause: args.cause, statusPageIds: args.statusPageIds });
+              const { incident } = await client.createIncident({ title: args.title, cause: args.cause, serviceIds: args.serviceIds });
               return text(t(tm.incidents.created, { summary: formatIncidentCompact(incident), id: incident.id }));
             }
             case "update": {
               if (!args.id) return error(t(tm.incidents.idRequired, { action: "update" }));
-              if (!args.title && !args.cause && !args.statusPageIds) return error(tm.incidents.titleOrCauseRequired);
-              const data: { title?: string; cause?: string; statusPageIds?: string[] } = {};
+              if (!args.title && !args.cause && !args.serviceIds) return error(tm.incidents.titleOrCauseRequired);
+              const data: { title?: string; cause?: string; serviceIds?: string[] } = {};
               if (args.title) data.title = args.title;
               if (args.cause) data.cause = args.cause;
-              if (args.statusPageIds) data.statusPageIds = args.statusPageIds;
+              if (args.serviceIds) data.serviceIds = args.serviceIds;
               const { incident: updated } = await client.updateIncident(args.id, data);
               return text(t(tm.incidents.updated, { summary: formatIncidentCompact(updated) }));
             }
@@ -375,14 +375,14 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         }
       },
     },
-    "status-pages": {
-      description: tm.statusPages.description,
+    services: {
+      description: tm.services.description,
       inputSchema: {
         type: "object" as const,
         required: ["action"] as const,
         properties: {
-          action: { type: "string", enum: [...STATUS_PAGE_ACTIONS], description: "Operation" },
-          id: { type: "string", description: "Status page ID (stats-reset)" },
+          action: { type: "string", enum: [...SERVICE_ACTIONS], description: "Operation" },
+          id: { type: "string", description: "Service ID (stats-reset)" },
           before: { type: "string", description: "Reset stats before this date (YYYY-MM-DD). Omit for all time." },
           verbose: { type: "boolean", default: false, description: "Full API response" },
         },
@@ -391,26 +391,26 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         try {
           switch (args.action) {
             case "list": {
-              const { statusPages } = await client.listStatusPages();
-              if (args.verbose) return text(JSON.stringify(statusPages, null, 2));
-              if (statusPages.length === 0) return text(tm.statusPages.noPages);
-              const summary = statusPages.map(formatStatusPageCompact).join("\n");
-              const hasNoDomain = statusPages.some((sp) => !sp.customDomain);
-              const hint = hasNoDomain ? `\n\n${tm.statusPages.customDomainHint}` : "";
-              return text(`${t(tm.statusPages.title, { count: statusPages.length })}\n${summary}${hint}`);
+              const { services } = await client.listServices();
+              if (args.verbose) return text(JSON.stringify(services, null, 2));
+              if (services.length === 0) return text(tm.services.noServices);
+              const summary = services.map(formatServiceCompact).join("\n");
+              const hasNoDomain = services.some((s) => !s.customDomain);
+              const hint = hasNoDomain ? `\n\n${tm.services.customDomainHint}` : "";
+              return text(`${t(tm.services.title, { count: services.length })}\n${summary}${hint}`);
             }
             case "stats-reset": {
-              if (!args.id) return error("Status page ID is required for stats-reset");
-              const result = await client.resetStatusPageStats(args.id, args.before as string | undefined);
+              if (!args.id) return error("Service ID is required for stats-reset");
+              const result = await client.resetServiceStats(args.id, args.before as string | undefined);
               return text(`Stats reset: ${result.deletedCount} records deleted`);
             }
             default:
-              return error(t(tm.statusPages.unknownAction, { action: args.action, actions: STATUS_PAGE_ACTIONS.join(", ") }));
+              return error(t(tm.services.unknownAction, { action: args.action, actions: SERVICE_ACTIONS.join(", ") }));
           }
         } catch (err: any) {
           const msg = err.message || String(err);
           if (err.upgradeUrl) {
-            return error(t(tm.statusPages.upgradePlan, { msg, url: err.upgradeUrl }));
+            return error(t(tm.services.upgradePlan, { msg, url: err.upgradeUrl }));
           }
           return error(msg);
         }
