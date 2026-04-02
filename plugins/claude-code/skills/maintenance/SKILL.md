@@ -30,9 +30,16 @@ mcp__manako__monitors(action: "maintenance", id: "<monitor-id>", maintenanceUnti
 
 **API:**
 ```bash
+# 自動解除あり (デフォルト)
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"maintenanceUntil":"2026-04-01T12:00:00Z"}' \
+  https://api.manako.dev/api/v1/monitors/<monitor-id>/maintenance
+
+# 手動解除のみ (autoResolve: false)
+curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"maintenanceUntil":"2026-04-01T12:00:00Z","autoResolve":false}' \
   https://api.manako.dev/api/v1/monitors/<monitor-id>/maintenance
 ```
 
@@ -139,12 +146,13 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 | `--duration <minutes>` | メンテナンス期間(分)。未指定時はデフォルト10分 |
 | `--until <ISO8601>` | メンテナンス終了日時。最大7日間 |
 | `--notify` | メンテナンス開始/終了を通知チャンネルに送信 |
+| `--no-auto-resolve` | 終了時刻で自動解除しない(手動解除が必要) |
 | `--end` | メンテナンスを終了する |
 | `--ids <id1,id2>` | 一括操作対象のモニターID(カンマ区切り、最大100件) |
 | `--all` | 全アクティブモニターに適用 |
 
 ## Constraints
 
-- メンテナンス最大期間: 7日間
+- メンテナンス最大期間: 7日間 (autoResolve=false の場合は制限なし)
 - 一括操作最大ID数: 100
 - メンテナンス中のモニターはチェックをスキップし、ステータスページで「メンテナンス中」と表示
