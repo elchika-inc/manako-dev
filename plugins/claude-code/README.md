@@ -4,19 +4,26 @@ Manako 監視ダッシュボードの Claude Code Plugin。モニター管理・
 
 ## インストール
 
-Claude Code の設定ファイルにプラグインを追加します:
+Claude Code で以下のコマンドを実行します:
 
-```bash
-# settings.json の allowedPlugins に追加
-claude settings add-plugin /path/to/manako/claude-code-plugin
+```
+/plugin marketplace add elchika-inc/manako-dev
+/plugin install manako@manako-dev
+/reload-plugins
 ```
 
-または `.claude/settings.json` に直接追加:
+### 手動インストール
+
+リポジトリをクローンして `.claude/settings.json` に直接追加する方法もあります:
+
+```bash
+git clone https://github.com/elchika-inc/manako-dev.git
+```
 
 ```json
 {
   "enabledPlugins": [
-    "/path/to/manako/claude-code-plugin"
+    "/path/to/manako-dev/claude-code-plugin"
   ]
 }
 ```
