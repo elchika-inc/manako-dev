@@ -309,3 +309,12 @@ export class ManakoClient {
     await this.request("DELETE", `/webhook-subscriptions/${encodeURIComponent(id)}`);
   }
 }
+
+export function isApiKeyExpired(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as ApiError).code === "API_KEY_EXPIRED"
+  );
+}
