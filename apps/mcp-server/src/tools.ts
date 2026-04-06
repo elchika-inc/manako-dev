@@ -307,7 +307,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
           status: { type: "string", enum: ["ongoing", "resolved", "acknowledged"], description: "Filter (list)" },
           title: { type: "string", description: "Incident title (create)" },
           cause: { type: "string", description: "Description or cause (create/update/resolve)" },
-          serviceIds: { type: "array", items: { type: "string" }, description: "Service IDs to display the incident on (create/update)" },
+          serviceId: { type: "string", description: "Service ID to associate the incident with (create only)" },
           verbose: { type: "boolean", default: false, description: "Full API response" },
         },
       },
@@ -317,7 +317,7 @@ export function createTools(client: ManakoClient, tr?: Translation) {
         status?: string;
         title?: string;
         cause?: string;
-        serviceIds?: string[];
+        serviceId?: string;
         verbose?: boolean;
       }) => {
         try {
@@ -340,16 +340,15 @@ export function createTools(client: ManakoClient, tr?: Translation) {
             }
             case "create": {
               if (!args.title) return error(tm.incidents.titleRequired);
-              const { incident } = await client.createIncident({ title: args.title, cause: args.cause, serviceIds: args.serviceIds });
+              const { incident } = await client.createIncident({ title: args.title, cause: args.cause, serviceId: args.serviceId });
               return text(t(tm.incidents.created, { summary: formatIncidentCompact(incident), id: incident.id }));
             }
             case "update": {
               if (!args.id) return error(t(tm.incidents.idRequired, { action: "update" }));
-              if (!args.title && !args.cause && !args.serviceIds) return error(tm.incidents.titleOrCauseRequired);
-              const data: { title?: string; cause?: string; serviceIds?: string[] } = {};
+              if (!args.title && !args.cause) return error(tm.incidents.titleOrCauseRequired);
+              const data: { title?: string; cause?: string } = {};
               if (args.title) data.title = args.title;
               if (args.cause) data.cause = args.cause;
-              if (args.serviceIds) data.serviceIds = args.serviceIds;
               const { incident: updated } = await client.updateIncident(args.id, data);
               return text(t(tm.incidents.updated, { summary: formatIncidentCompact(updated) }));
             }

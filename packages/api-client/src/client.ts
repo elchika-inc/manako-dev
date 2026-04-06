@@ -30,7 +30,7 @@ export interface Incident {
   status: IncidentStatus;
   title: string | null;
   cause: string | null;
-  serviceIds?: string[];
+  serviceId: string;
   startedAt: string;
   resolvedAt: string | null;
 }
@@ -237,11 +237,11 @@ export class ManakoClient {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}/acknowledge`);
   }
 
-  async createIncident(data: { title: string; cause?: string; serviceIds?: string[] }): Promise<{ incident: Incident }> {
+  async createIncident(data: { title: string; cause?: string; serviceId?: string }): Promise<{ incident: Incident }> {
     return this.request("POST", "/incidents", data);
   }
 
-  async updateIncident(id: string, data: { title?: string; cause?: string; serviceIds?: string[] }): Promise<{ incident: Incident }> {
+  async updateIncident(id: string, data: { title?: string; cause?: string }): Promise<{ incident: Incident }> {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}`, data);
   }
 
@@ -262,11 +262,6 @@ export class ManakoClient {
   // Notification Channels
   async testNotificationChannel(id: string): Promise<{ success: boolean }> {
     return this.request("POST", `/notification-channels/${encodeURIComponent(id)}/test`);
-  }
-
-  // Billing
-  async getSubscription(): Promise<{ plan: string; modules: string[]; subscription: unknown }> {
-    return this.request("GET", "/billing/subscription");
   }
 
   // Audit Logs
