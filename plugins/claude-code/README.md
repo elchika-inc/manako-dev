@@ -35,6 +35,12 @@ git clone https://github.com/elchika-inc/manako-dev.git
 1. **CLI 認証** (推奨): `manako login --api-key mk_your_key`
 2. **MCP 認証**: 自動設定済み。「Manako にログインして」と依頼
 
+## 利用可能なエージェント
+
+| エージェント | トリガー例 | 説明 |
+|------------|-----------|------|
+| **site-explorer** | 「https://... を触って問題を報告して」「URL1 と URL2 を両方テストして」 | 渡した URL（複数可）を探索的にテストし、バグ・UI崩れ・コンソールエラーを自動報告 |
+
 ## 利用可能なスキル
 
 | スキル | 呼び出し例 | 説明 |
@@ -70,3 +76,4 @@ git clone https://github.com/elchika-inc/manako-dev.git
 - Claude Code
 - Manako アカウント + API Key (`mk_` プレフィックス)
 - (オプション) Manako CLI インストール済み
+- **site-explorer エージェントを使う場合**: Playwright MCP サーバー（`@playwright/mcp`）をユーザー自身の Claude Code 設定に追加が必要

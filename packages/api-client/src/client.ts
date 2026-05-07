@@ -153,9 +153,9 @@ export class ManakoClient {
     name: string;
     config: Record<string, unknown>;
     intervalSeconds?: number;
-  }): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: RawMonitor }>("POST", "/monitors", data);
-    return { monitor: normalizeMonitor(res.monitor) };
+  }): Promise<{ monitor: Monitor; agentToken?: string }> {
+    const res = await this.request<{ monitor: RawMonitor; agentToken?: string }>("POST", "/monitors", data);
+    return { monitor: normalizeMonitor(res.monitor), ...(res.agentToken !== undefined && { agentToken: res.agentToken }) };
   }
 
   async deleteMonitor(id: string): Promise<{ ok: boolean }> {
@@ -215,6 +215,10 @@ export class ManakoClient {
   async baselineReset(id: string): Promise<{ monitor: Monitor }> {
     const res = await this.request<{ monitor: RawMonitor }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
     return { monitor: normalizeMonitor(res.monitor) };
+  }
+
+  async getAgentToken(id: string): Promise<{ token: string; metricsUrl: string }> {
+    return this.request("GET", `/monitors/${encodeURIComponent(id)}/agent-token`);
   }
 
   async resetMonitorStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
