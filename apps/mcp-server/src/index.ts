@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 const PRODUCT = { name: "Manako" } as const;
 import { ManakoClient } from "@manako/api-client";
-import { createTools } from "./tools.js";
+import { getToolSchemas, executeTool, KNOWN_TOOL_NAMES } from "./tools.js";
 import { detectLanguage, getTranslation, t } from "./i18n.js";
 import type { Language, Translation } from "./i18n.js";
 import type { Env } from "./env.js";
@@ -21,16 +21,11 @@ function getLang(req: { header: (name: string) => string | undefined }): Languag
 app.get("/", (c) => {
   const lang = getLang(c.req);
   const tr = getTranslation(lang);
-  const tools = createTools(new ManakoClient({ apiUrl: "", apiKey: "" }), tr);
   return c.json({
     name: PRODUCT.name,
     version: "0.1.0",
     description: tr.server.description,
-    tools: Object.entries(tools).map(([name, tool]) => ({
-      name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-    })),
+    tools: getToolSchemas(tr),
   });
 });
 
@@ -56,19 +51,18 @@ app.post("/tools/:toolName", async (c) => {
     return c.json({ error: tr.auth.invalidJson }, 400);
   }
 
-  const tools = createTools(client, tr);
-  const tool = tools[toolName as keyof typeof tools];
-
-  if (!tool) {
+  if (!KNOWN_TOOL_NAMES.includes(toolName as any)) {
     return c.json({ error: t(tr.auth.unknownTool, { name: toolName }) }, 404);
   }
 
   try {
-    const result = await tool.execute(args as Record<string, unknown>);
+    const result = await executeTool(toolName, args, client, tr);
     return c.json(result);
   } catch (err: unknown) {
     return c.json({
-      content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
+      content: [
+        { type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` },
+      ],
       isError: true,
     });
   }
@@ -88,17 +82,9 @@ function jsonrpcResult(id: string | number | null, result: unknown) {
 
 function generateSessionId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function getToolList(tr: Translation) {
-  const dummyClient = new ManakoClient({ apiUrl: "", apiKey: "" });
-  const tools = createTools(dummyClient, tr);
-  return Object.entries(tools).map(([name, tool]) => ({
-    name,
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-  }));
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function getAuthTool(tr: Translation) {
@@ -123,7 +109,10 @@ function getAuthStatusTool(tr: Translation) {
   };
 }
 
-async function resolveApiKey(c: { env: Env; req: { header: (name: string) => string | undefined } }, sessionId?: string): Promise<string | null> {
+async function resolveApiKey(
+  c: { env: Env; req: { header: (name: string) => string | undefined } },
+  sessionId?: string,
+): Promise<string | null> {
   // 1. Check Authorization header
   const headerKey = c.req.header("Authorization")?.replace("Bearer ", "");
   if (headerKey?.startsWith("mk_")) return headerKey;
@@ -148,22 +137,33 @@ async function handleAuth(
 
   if (!codeRes.ok) {
     return {
-      content: [{
-        type: "text",
-        text: `Error: ${t(tr.auth.deviceCodeFailed, { status: String(codeRes.status) })}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Error: ${t(tr.auth.deviceCodeFailed, { status: String(codeRes.status) })}`,
+        },
+      ],
       isError: true,
     };
   }
 
-  const { deviceCode, userCode, verificationUrlComplete } =
-    (await codeRes.json()) as { deviceCode: string; userCode: string; verificationUrlComplete: string };
+  const { deviceCode, userCode, verificationUrlComplete } = (await codeRes.json()) as {
+    deviceCode: string;
+    userCode: string;
+    verificationUrlComplete: string;
+  };
 
   return {
-    content: [{
-      type: "text",
-      text: t(tr.auth.deviceCodeMessage, { url: verificationUrlComplete, code: userCode, deviceCode }),
-    }],
+    content: [
+      {
+        type: "text",
+        text: t(tr.auth.deviceCodeMessage, {
+          url: verificationUrlComplete,
+          code: userCode,
+          deviceCode,
+        }),
+      },
+    ],
   };
 }
 
@@ -192,7 +192,9 @@ async function handleAuthStatus(
     const { apiKey } = (await tokenRes.json()) as { apiKey: string };
     if (!env.SESSION_KV) {
       return {
-        content: [{ type: "text", text: "Error: Session storage unavailable (SESSION_KV not configured)" }],
+        content: [
+          { type: "text", text: "Error: Session storage unavailable (SESSION_KV not configured)" },
+        ],
         isError: true,
       };
     }
@@ -202,7 +204,9 @@ async function handleAuthStatus(
     return { content: [{ type: "text", text: tr.auth.authStatusApproved }] };
   }
 
-  const body = (await tokenRes.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
+  const body = (await tokenRes.json().catch(() => ({}))) as {
+    error?: { code?: string; message?: string };
+  };
   const code = body?.error?.code;
 
   if (code === "AUTHORIZATION_PENDING") {
@@ -212,7 +216,12 @@ async function handleAuthStatus(
     return { content: [{ type: "text", text: tr.auth.authStatusExpired }], isError: true };
   }
   return {
-    content: [{ type: "text", text: t(tr.auth.authStatusError, { message: body?.error?.message || "Unknown" }) }],
+    content: [
+      {
+        type: "text",
+        text: t(tr.auth.authStatusError, { message: body?.error?.message || "Unknown" }),
+      },
+    ],
     isError: true,
   };
 }
@@ -221,7 +230,12 @@ app.post("/mcp", async (c) => {
   const lang = getLang(c.req);
   const tr = getTranslation(lang);
 
-  let body: { jsonrpc?: string; id?: string | number; method?: string; params?: Record<string, unknown> };
+  let body: {
+    jsonrpc?: string;
+    id?: string | number;
+    method?: string;
+    params?: Record<string, unknown>;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -245,11 +259,13 @@ app.post("/mcp", async (c) => {
   switch (method) {
     case "initialize": {
       sessionId = generateSessionId();
-      const res = c.json(jsonrpcResult(id, {
-        protocolVersion: MCP_PROTOCOL_VERSION,
-        capabilities: { tools: {} },
-        serverInfo: { name: PRODUCT.name, version: "0.1.0" },
-      }));
+      const res = c.json(
+        jsonrpcResult(id, {
+          protocolVersion: MCP_PROTOCOL_VERSION,
+          capabilities: { tools: {} },
+          serverInfo: { name: PRODUCT.name, version: "0.1.0" },
+        }),
+      );
       res.headers.set("Mcp-Session-Id", sessionId);
       return res;
     }
@@ -258,7 +274,7 @@ app.post("/mcp", async (c) => {
       return c.json(jsonrpcResult(id, {}));
 
     case "tools/list": {
-      const allTools = [getAuthTool(tr), getAuthStatusTool(tr), ...getToolList(tr)];
+      const allTools = [getAuthTool(tr), getAuthStatusTool(tr), ...getToolSchemas(tr)];
       return c.json(jsonrpcResult(id, { tools: allTools }));
     }
 
@@ -271,63 +287,96 @@ app.post("/mcp", async (c) => {
       // auth tool — no API key required
       if (toolName === "auth") {
         if (!sessionId) {
-          return c.json(jsonrpcResult(id, { content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }], isError: true }));
+          return c.json(
+            jsonrpcResult(id, {
+              content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }],
+              isError: true,
+            }),
+          );
         }
         try {
           const result = await handleAuth(c.env, sessionId, tr);
           return c.json(jsonrpcResult(id, result));
         } catch (err: unknown) {
-          return c.json(jsonrpcResult(id, {
-            content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
-            isError: true,
-          }));
+          return c.json(
+            jsonrpcResult(id, {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+                },
+              ],
+              isError: true,
+            }),
+          );
         }
       }
 
       // auth_status tool — no API key required
       if (toolName === "auth_status") {
         if (!sessionId) {
-          return c.json(jsonrpcResult(id, { content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }], isError: true }));
+          return c.json(
+            jsonrpcResult(id, {
+              content: [{ type: "text", text: `Error: ${tr.auth.noSession}` }],
+              isError: true,
+            }),
+          );
         }
         try {
           const result = await handleAuthStatus(c.env, sessionId, params, tr);
           return c.json(jsonrpcResult(id, result));
         } catch (err: unknown) {
-          return c.json(jsonrpcResult(id, {
-            content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
-            isError: true,
-          }));
+          return c.json(
+            jsonrpcResult(id, {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+                },
+              ],
+              isError: true,
+            }),
+          );
         }
       }
 
       // All other tools require API key (header or session)
       const apiKey = await resolveApiKey(c, sessionId);
       if (!apiKey) {
-        return c.json(jsonrpcResult(id, {
-          content: [{ type: "text", text: `Error: ${tr.auth.notAuthenticated}` }],
-          isError: true,
-        }));
+        return c.json(
+          jsonrpcResult(id, {
+            content: [{ type: "text", text: `Error: ${tr.auth.notAuthenticated}` }],
+            isError: true,
+          }),
+        );
       }
 
-      const client = new ManakoClient({ apiUrl: c.env.API_URL, apiKey });
-      const tools = createTools(client, tr);
-      const tool = tools[toolName as keyof typeof tools];
-      if (!tool) {
+      if (!KNOWN_TOOL_NAMES.includes(toolName as any)) {
         return c.json(jsonrpcError(id, -32601, t(tr.auth.unknownTool, { name: toolName })));
       }
+      const client = new ManakoClient({ apiUrl: c.env.API_URL, apiKey });
       try {
-        const result = await tool.execute((params?.arguments ?? {}) as Record<string, unknown>);
+        const result = await executeTool(
+          toolName,
+          (params?.arguments ?? {}) as Record<string, unknown>,
+          client,
+          tr,
+        );
         return c.json(jsonrpcResult(id, result));
       } catch (err: unknown) {
-        return c.json(jsonrpcResult(id, {
-          content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
-          isError: true,
-        }));
+        return c.json(
+          jsonrpcResult(id, {
+            content: [
+              { type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` },
+            ],
+            isError: true,
+          }),
+        );
       }
     }
 
     default:
-      return c.json(jsonrpcError(id, -32601, t(tr.auth.methodNotFound, { method })));
+      return c.json(jsonrpcError(id, -32601, t(tr.auth.methodNotFound, { method: method ?? "" })));
   }
 });
 
