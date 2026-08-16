@@ -95,42 +95,11 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 |-----------|------|
 | `id` | モニター ID (ULID) |
 | `name` | モニター名 |
-| `type` | タイプ (http, tcp, ping, heartbeat, webchange, ssl, domain) |
+| `type` | タイプ (http, tcp, ping) |
 | `status` | 現在のステータス (up, down, degraded, unknown, paused) |
 | `isActive` | 有効/無効 |
 | `intervalSeconds` | チェック間隔 (秒) |
 | `lastCheckedAt` | 最終チェック日時 |
-
-### スナップショット一覧 (WebChange モニター)
-
-WebChange モニターのスナップショット履歴を取得する。checkType が `screenshot` または `both` の場合、スクリーンショット情報も含まれる。
-
-**API:**
-```bash
-curl -s -H "Authorization: Bearer <accessToken>" \
-  https://api.manako.dev/dashboard/monitors/<monitor-id>/snapshots
-```
-
-レスポンスの `screenshotR2Key` と `screenshotHash` は checkType が `screenshot` または `both` の場合のみ値が入る。
-
-### スクリーンショット画像取得
-
-特定スナップショットのスクリーンショット PNG 画像を取得する。
-
-**API:**
-```bash
-curl -s -H "Authorization: Bearer <accessToken>" \
-  https://api.manako.dev/dashboard/monitors/<monitor-id>/snapshots/<snapshot-id>/screenshot \
-  -o screenshot.png
-```
-
-### Baseline Reset (WebChange only)
-
-WebChange モニターのベースラインをリセットする。`changeMode: "tamper"` でステータスが "down" になった場合、ベースラインをリセットして "up" に戻す。
-
-- CLI: `manako monitors baseline-reset <id>`
-- MCP: `monitors` tool with `action: "baseline-reset"`, `id: "<monitor-id>"`
-- API: `POST /api/v1/monitors/<id>/baseline-reset`
 
 ## Stats Reset
 
@@ -144,8 +113,8 @@ manako monitors stats-reset <monitor-id> --before 2024-01-01
 
 **MCP:**
 ```
-mcp__manako__monitors(action: "reset-stats", id: "<monitor-id>")
-mcp__manako__monitors(action: "reset-stats", id: "<monitor-id>", before: "2024-01-01")
+mcp__manako__monitors(action: "stats-reset", id: "<monitor-id>")
+mcp__manako__monitors(action: "stats-reset", id: "<monitor-id>", before: "2024-01-01")
 ```
 
 **API:**
@@ -165,22 +134,6 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 - 特定モニターの深堀りは `manako monitors get <id>` で JSON を取得
 - 設定変更後やインシデント対応中は `manako monitors check <id>` で即座確認
 - モニター ID がわからない場合は先に `manako monitors list` で一覧取得
-- WebChange モニターで `screenshot` や `both` を利用するには Paid プランが必要 (最小間隔 1800 秒)
-- Free プランでは checkType `text` のみ利用可能
-
-## Custom Domain for Status Pages
-
-ステータスページにカスタムドメインを設定する手順:
-
-1. **ダッシュボード**でステータスページの編集画面を開く
-2. カスタムドメインセクションでドメイン(例: `status.example.com`)を入力し「有効化」
-3. 表示されたDNSレコード(CNAME + TXT/CNAME検証)をDNSに追加
-4. DNS反映後「検証」をクリック → SSL証明書が自動発行
-
-**状態確認**: MCP の `status-pages` ツール(`action: list`)でカスタムドメインの状態を確認できます。
-
-**注意**: カスタムドメインの設定・削除はダッシュボードからのみ実行可能です(Pro プラン以上)。
-
 ### モニター更新
 
 名前、インターバル、有効/無効を変更する。

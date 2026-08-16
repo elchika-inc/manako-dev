@@ -43,4 +43,4 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 
 ## Supported Channels
 
-Email, Slack, Discord, LINE, Webhook, PagerDuty, Datadog, GitHub, Grafana, Jira
+Email, Slack, Discord, LINE, Webhook, GitHub

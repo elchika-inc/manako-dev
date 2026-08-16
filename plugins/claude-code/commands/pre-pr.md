@@ -59,7 +59,7 @@ git diff origin/main...HEAD --name-only -- packages/db/drizzle/
 
 ### Phase 5: Documentation Gap Detection
 
-Run these 3 checks using `git diff origin/main...HEAD --name-only`. This phase is **read-only** -- do NOT modify any files.
+Run these 4 checks. This phase is **read-only** -- do NOT modify any files.
 
 **Check 1 - API route changes vs openapi.yaml:**
 
@@ -98,13 +98,49 @@ git diff origin/main...HEAD --name-only -- apps/cli/ apps/mcp-server/ apps/api/s
 If any of these changed but plugin skills were not updated:
 
 ```bash
-git diff origin/main...HEAD --name-only -- claude-code-plugin/skills/
+git diff origin/main...HEAD --name-only -- claude-code-plugin/skills/ agent-plugin/skills/ agent-plugin/clawhub.json
 ```
 
-Then warn: "CLI/MCP/API changes detected but claude-code-plugin skills were not updated."
+配布用スキルパッケージは2つある（`claude-code-plugin/` と `agent-plugin/`）。**両方を diff 対象に含めること** — 片方だけ見ると、もう片方に廃止済み API の手順書が残る（AGENTS.md「Agent Plugin Skill Sync」節を参照）。
 
-- If all 3 checks pass: record `OK`
-- If any check triggers: record `WARN` with the specific warnings. Recommend the user run `/update-docs` to fix gaps.
+Then warn: "CLI/MCP/API changes detected but distribution plugin skills (claude-code-plugin / agent-plugin) were not updated."
+
+**Check 4 - 保証台帳:**
+
+索引の実在を検査する:
+
+```bash
+bash scripts/check-guarantees.sh
+```
+
+- exit 0: 検査を続行する
+- non-zero: stderrをそのまま報告し、Docsを`FAIL`にする。exit 0だけを成功として扱う
+
+API routeと台帳全体の粗いco-changeを検査する:
+
+```bash
+git diff origin/main...HEAD --name-only -- apps/api/src/routes/
+```
+
+```bash
+git diff origin/main...HEAD --name-only -- .docs/guarantees.md
+```
+
+前者に出力があり後者が空なら、`API routes changed but .docs/guarantees.md was not updated.` と警告する。
+
+続いて、commit済み・未commit・未追跡を含むG-ID行単位のco-changeを検査する:
+
+```bash
+bash scripts/check-guarantee-cochange.sh
+```
+
+- exit 0: 検査を続行する
+- exit 2: stderr の `COCHANGE_WARN:` 行をそのまま報告し、Docsを`WARN`にするがPRはブロックしない
+- exit 1またはexit 2以外のnon-zero: stderrをそのまま報告し、Docsを`FAIL`にする
+
+- If all 4 checks pass: record `OK`
+- If Check 1〜3、粗いco-change、または行単位co-changeのexit 2がtriggerする: record `WARN` with the specific warnings. Recommend the user run `/update-docs` to fix gaps.
+- If `check-guarantees.sh` exits non-zero, or `check-guarantee-cochange.sh` exits with a non-zero other than 2: record `FAIL`. Do not create a PR until the failure is fixed.
 
 ### Phase 6: Code Review
 
@@ -113,8 +149,9 @@ Invoke review skills sequentially using the Skill tool:
 1. Invoke `pr-review-toolkit:review-pr` to run comprehensive code review
 2. Invoke `code-review:code-review` to run security-focused review
 
-- Record `OK` if no critical issues found
-- Record `WARN` with a summary of findings (number of critical/important/minor issues from each review)
+- Record `OK` if no flag or optional findings are reported
+- If either reviewer reports a confidence 80% or higher Critical / Important flag, record `FAIL` and return to the review cycle for a fix or explicit acceptance before rerunning `/pre-pr`
+- Record `WARN` only for optional findings that do not affect correctness, security, or explicit requirements
 
 ## Final Report
 
@@ -129,10 +166,10 @@ After all 6 phases complete, output the following report:
 | Lint  | {PASS or FAIL} | {error details if FAIL, empty if PASS} |
 | Test  | {PASS or FAIL} | {failed test count if FAIL, empty if PASS} |
 | Migration | {OK or WARN} | {file names if WARN, empty if OK} |
-| Docs  | {OK or WARN} | {gap descriptions if WARN, empty if OK} |
-| Code Review | {OK or WARN} | {issue count summary if WARN, empty if OK} |
+| Docs  | {OK or WARN or FAIL} | {gap descriptions or checker errors, empty if OK} |
+| Code Review | {OK or WARN or FAIL} | {issue count summary if WARN or FAIL, empty if OK} |
 
-### Overall: {READY if Build+Lint+Test all PASS, otherwise NOT READY}
+### Overall: {READY only if Build+Lint+Test all PASS and neither Docs nor Code Review is FAIL, otherwise NOT READY}
 ```
 
 If Overall is `NOT READY`, list the FAIL items that need fixing.

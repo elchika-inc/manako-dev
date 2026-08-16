@@ -31,19 +31,19 @@ manako status
 
 **CLI が未インストールの場合:**
 
-Manako モノレポ内で作業中なら:
+npm から公開版をインストールする（推奨）:
+
+```bash
+npm install -g manako
+```
+
+Manako モノレポ内で開発中なら代替として:
 
 ```bash
 pnpm --filter @manako/cli build
 ```
 
 ビルド後、`pnpm --filter @manako/cli exec manako` で実行可能。
-
-npm 公開版が利用可能になった場合:
-
-```bash
-npm install -g manako
-```
 
 ### Step 2: CLI 認証
 
@@ -58,7 +58,7 @@ manako login
 ブラウザが自動で開き、表示されたコードを確認して承認する。承認完了後、API Key が自動的に `~/.manako.json` に保存される。
 
 1. `manako login` を実行するとデバイスコードが発行される
-2. ブラウザで `https://manako.dev/device` が開く
+2. ブラウザで `https://app.manako.dev/auth/device` が開く
 3. 画面に表示された 8 桁のコード (例: ABCD-EFGH) を確認する
 4. ブラウザで承認すると CLI が自動的に認証完了する
 
@@ -81,13 +81,13 @@ MCP ツールが利用可能か確認するには、ツール一覧に `mcp__man
 MCP ツールが利用可能な場合、`mcp__manako__auth` ツールで認証を開始する:
 
 ```
-mcp__manako__auth(action: "start")
+mcp__manako__auth()
 ```
 
-ブラウザで承認 URL が表示される。ユーザーが承認後、`auth_status` ツールで状態を確認:
+引数なしで呼ぶとデバイスコードと承認 URL が発行される（呼ぶたびに新しいコードが発行されるので再実行しない）。ユーザーが承認後、`auth_status` ツールに deviceCode を渡して状態を確認:
 
 ```
-mcp__manako__auth(action: "status")
+mcp__manako__auth_status(deviceCode: "<device-code>")
 ```
 
 承認完了後は API Key が自動保存される。

@@ -101,7 +101,7 @@ manako admin incidents --status ongoing
 ### 成長 (直近30日)
 - 新規チーム: X件
 - 新規ユーザー: X件
-- プラン分布: free X% / pro Y% / business Z%
+- プラン分布: free X% / pro Y%
 - 削除リクエスト: X件
 
 ### アクティビティ

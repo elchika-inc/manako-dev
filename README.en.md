@@ -36,10 +36,13 @@ After installation, run in Claude Code:
 |-------|---------|-------------|
 | **setup** | "Set up manako" | CLI/MCP initial setup guide |
 | **monitor-status** | "Check monitor status" | Check monitor status |
-| **create-monitor** | "Monitor example.com" | Create monitors (7 types) |
+| **create-monitor** | "Monitor example.com" | Create monitors (3 types) |
 | **list-incidents** | "Show incident list" | List and filter incidents |
 | **acknowledge-incident** | "Acknowledge the incident" | Acknowledge incidents |
 | **audit-logs** | "Show audit logs" | View team audit logs |
+| **notification-channels** | "Show notification channels" | Inspect channels and send test notifications |
+| **maintenance** | "Schedule a maintenance window" | Create and manage maintenance windows |
+| **admin-review** | "Analyze service-wide status" | Read-only analytics for operators |
 
 ## MCP Server
 

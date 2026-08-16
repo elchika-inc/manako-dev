@@ -254,7 +254,7 @@ app.post("/mcp", async (c) => {
   }
 
   // Session management via Mcp-Session-Id header
-  let sessionId = c.req.header("Mcp-Session-Id") || "";
+  let sessionId = c.req.header("Mcp-Session-Id")?.trim() || "";
 
   switch (method) {
     case "initialize": {
@@ -279,8 +279,8 @@ app.post("/mcp", async (c) => {
     }
 
     case "tools/call": {
-      const toolName = params?.name as string;
-      if (!toolName) {
+      const toolName = params?.name;
+      if (!toolName || typeof toolName !== "string") {
         return c.json(jsonrpcError(id, -32602, tr.auth.missingToolName));
       }
 

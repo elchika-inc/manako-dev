@@ -36,10 +36,13 @@
 |-------|--------|------|
 | **setup** | "manako をセットアップして" | CLI/MCP の初期セットアップガイド |
 | **monitor-status** | "モニターの状態を確認して" | モニターの状態を確認 |
-| **create-monitor** | "example.com を監視して" | モニターを作成(7種類対応) |
+| **create-monitor** | "example.com を監視して" | モニターを作成(3種類対応) |
 | **list-incidents** | "インシデント一覧を見せて" | インシデントの一覧表示・フィルタリング |
 | **acknowledge-incident** | "インシデントを確認済みにして" | インシデントの確認(acknowledge) |
 | **audit-logs** | "監査ログを確認して" | チームの監査ログを表示 |
+| **notification-channels** | "通知チャンネルを確認して" | 通知チャンネルの確認・テスト送信 |
+| **maintenance** | "メンテナンス期間を設定して" | メンテナンスウィンドウの作成・管理 |
+| **admin-review** | "サービス全体の状況を分析して" | 運営者向けの読み取り専用分析 |
 
 ## MCP Server
 

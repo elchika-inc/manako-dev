@@ -45,7 +45,7 @@ export interface Translation {
     maintenanceStartedBulk: string;
     maintenanceEndedAll: string;
     maintenanceEndedBulk: string;
-    baselineReset: string;
+    statsReset: string;
   };
   incidents: {
     description: string;
@@ -70,7 +70,14 @@ export interface Translation {
     title: string;
     unknownAction: string;
     upgradePlan: string;
-    customDomainHint: string;
+    nameRequired: string;
+    slugRequired: string;
+    idRequired: string;
+    nothingToUpdate: string;
+    created: string;
+    updated: string;
+    deleted: string;
+    statsReset: string;
   };
   auditLogs: {
     description: string;
@@ -85,19 +92,6 @@ export interface Translation {
     idRequired: string;
     upgradePlan: string;
     unknownAction: string;
-  };
-  webhookSubscriptions: {
-    description: string;
-    noSubscriptions: string;
-    title: string;
-    created: string;
-    deleted: string;
-    targetUrlRequired: string;
-    secretRequired: string;
-    eventsRequired: string;
-    idRequired: string;
-    unknownAction: string;
-    upgradePlan: string;
   };
 }
 
@@ -116,7 +110,8 @@ const en: Translation = {
     deviceCodeFailed: "Failed to start device code flow ({{status}})",
     deviceCodeMessage:
       "Please open the following URL in your browser to authenticate:\n{{url}}\n\nYour user code: {{code}}\n\nAfter approving, call auth_status with deviceCode: {{deviceCode}}",
-    authStatusPending: "Authorization pending. Please approve the request in your browser, then try again.",
+    authStatusPending:
+      "Authorization pending. Please approve the request in your browser, then try again.",
     authStatusApproved: "Authentication successful. You can now use other tools.",
     authStatusExpired: "Device code has expired. Please call auth again to restart.",
     authStatusError: "Authentication error: {{message}}",
@@ -142,8 +137,7 @@ const en: Translation = {
     updated: "Updated: {{summary}}\nID: {{id}}",
     deleted: "Monitor {{id}} deleted.",
     checkResult: "Check result: {{status}}",
-    unknownAction:
-      "Unknown action: {{action}}. Use: {{actions}}",
+    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     idRequiredForUpdate: "id is required for update action",
     maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
@@ -152,7 +146,7 @@ const en: Translation = {
     maintenanceStartedBulk: "Maintenance started for {{count}} monitors until {{until}}",
     maintenanceEndedAll: "Maintenance ended for {{count}} monitors",
     maintenanceEndedBulk: "Maintenance ended for {{count}} monitors",
-    baselineReset: "Baseline reset: {{name}} ({{id}})",
+    statsReset: "Stats reset: {{count}} records deleted",
   },
   incidents: {
     description:
@@ -164,54 +158,47 @@ const en: Translation = {
     acknowledged: "Incident {{id}} acknowledged.",
     titleRequired: "title is required for create action",
     created: "Created: {{summary}}\nID: {{id}}",
-    titleOrCauseRequired:
-      "title or cause is required for update action",
+    titleOrCauseRequired: "title or cause is required for update action",
     updated: "Updated: {{summary}}",
     resolved: "Resolved: {{summary}}",
     deleted: "Incident {{id}} deleted.",
-    unknownAction:
-      "Unknown action: {{action}}. Use: {{actions}}",
+    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     idRequired: "id is required for {{action}} action",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
   },
   services: {
     description:
-      "View services and custom domain status. Actions: list (show all services with custom domain info), stats-reset (delete check history by service ID). Use verbose=true for full data.",
+      "Manage services (monitor groups). Actions: list (show all services), create (new service; slug derived from name if omitted), update (rename/re-slug/toggle public by ID), delete (remove by ID; its monitors move to the default service), stats-reset (delete check history by service ID). Use verbose=true for full data.",
     noServices: "No services configured.",
     title: "Services ({{count}}):",
-    unknownAction:
-      "Unknown action: {{action}}. Use: {{actions}}",
+    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
-    customDomainHint: "Custom domain can be configured from the dashboard.",
+    nameRequired: "Service name is required for create.",
+    slugRequired:
+      "Could not derive a slug from the name. Provide slug explicitly (lowercase alphanumeric with hyphens, min 2 chars).",
+    idRequired: "Service ID is required for {{action}}.",
+    nothingToUpdate:
+      "Nothing to update. Provide at least one of: name, slug, description, isPublic.",
+    created: "Service created: {{name}} (ID: {{id}}, slug: {{slug}})",
+    updated: "Service updated: {{name}} (ID: {{id}})",
+    deleted: "Service {{id}} deleted. Its monitors were moved to the default service.",
+    statsReset: "Stats reset: {{count}} records deleted",
   },
   auditLogs: {
     description:
       "View audit logs. Actions: list (show audit trail with optional filters). Use verbose=true for full data.",
     noLogs: "No audit logs found.",
     title: "Audit Logs ({{count}} entries):",
-    unknownAction:
-      "Unknown action: {{action}}. Use: {{actions}}",
+    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
   },
   notificationChannels: {
-    description: "Test notification channels. Actions: test (send a test notification to verify channel config). Requires channel ID.",
+    description:
+      "Test notification channels. Actions: test (send a test notification to verify channel config). Requires channel ID.",
     testSent: "Test notification sent to channel {{id}}.",
     idRequired: "id is required for test action",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     unknownAction: "Unknown action: {{action}}. Use: test",
-  },
-  webhookSubscriptions: {
-    description: "Manage webhook subscriptions. Actions: list (show all), create (new subscription), delete (remove by ID). Events: incident.created, incident.resolved, webchange.detected.",
-    noSubscriptions: "No webhook subscriptions configured.",
-    title: "Webhook Subscriptions ({{count}}):",
-    created: "Created webhook subscription {{id}} for {{targetUrl}}",
-    deleted: "Webhook subscription {{id}} deleted.",
-    targetUrlRequired: "targetUrl is required for create action (HTTPS URL)",
-    secretRequired: "secret is required for create action (min 16 chars)",
-    eventsRequired: "events is required for create action (e.g. incident.created)",
-    idRequired: "id is required for {{action}} action",
-    unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
-    upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
   },
 };
 
@@ -234,8 +221,7 @@ const ja: Translation = {
     authStatusApproved: "認証に成功しました。他のツールを使用できます。",
     authStatusExpired: "デバイスコードの有効期限が切れました。再度authを呼び出してください。",
     authStatusError: "認証エラー: {{message}}",
-    noSession:
-      "セッションがありません。先に initialize を呼び出してください。",
+    noSession: "セッションがありません。先に initialize を呼び出してください。",
     notAuthenticated:
       "認証されていません。auth ツールでログインするか、Authorization ヘッダーでAPIキーを指定してください。",
     parseError: "パースエラー",
@@ -251,17 +237,14 @@ const ja: Translation = {
     title: "モニター ({{count}}):",
     idRequired: "{{action}} アクションには id が必要です",
     nameRequired: "作成アクションには name が必要です",
-    urlOrConfigRequired:
-      "HTTP作成には url または config が必要です",
+    urlOrConfigRequired: "HTTP作成には url または config が必要です",
     configRequired: "HTTP以外のタイプには config が必要です",
     created: "作成: {{summary}}\nID: {{id}}",
     updated: "更新: {{summary}}\nID: {{id}}",
     deleted: "モニター {{id}} を削除しました。",
     checkResult: "チェック結果: {{status}}",
-    unknownAction:
-      "不明なアクション: {{action}}。使用可能: {{actions}}",
-    upgradePlan:
-      "{{msg}}\nプランをアップグレード: {{url}}",
+    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
     idRequiredForUpdate: "更新アクションには id が必要です",
     maintenanceStarted: "メンテナンス開始: {{name}} ({{id}}) - {{until}} まで",
     maintenanceEnded: "メンテナンス終了: {{name}} ({{id}})",
@@ -269,72 +252,59 @@ const ja: Translation = {
     maintenanceStartedBulk: "{{count}}件のモニターのメンテナンスを開始しました (終了: {{until}})",
     maintenanceEndedAll: "{{count}}件のモニターのメンテナンスを終了しました",
     maintenanceEndedBulk: "{{count}}件のモニターのメンテナンスを終了しました",
-    baselineReset: "ベースラインリセット: {{name}} ({{id}})",
+    statsReset: "統計リセット: {{count}} 件のレコードを削除しました",
   },
   incidents: {
     description:
       "インシデントを管理します。アクション: list (一覧), acknowledge (確認), create (手動作成), update (更新), resolve (解決), delete (手動のみ削除)。verbose=true で全データ表示。",
     noIncidents: "インシデントはありません。",
-    noIncidentsWithStatus:
-      "{{status}} のインシデントはありません。",
+    noIncidentsWithStatus: "{{status}} のインシデントはありません。",
     title: "インシデント ({{count}}):",
-    idRequiredForAck:
-      "acknowledge アクションには id が必要です",
-    acknowledged:
-      "インシデント {{id}} を確認済みにしました。",
+    idRequiredForAck: "acknowledge アクションには id が必要です",
+    acknowledged: "インシデント {{id}} を確認済みにしました。",
     titleRequired: "作成アクションには title が必要です",
     created: "作成: {{summary}}\nID: {{id}}",
-    titleOrCauseRequired:
-      "更新アクションには title または cause が必要です",
+    titleOrCauseRequired: "更新アクションには title または cause が必要です",
     updated: "更新: {{summary}}",
     resolved: "解決: {{summary}}",
     deleted: "インシデント {{id}} を削除しました。",
-    unknownAction:
-      "不明なアクション: {{action}}。使用可能: {{actions}}",
+    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
     idRequired: "{{action}} アクションには id が必要です",
-    upgradePlan:
-      "{{msg}}\nプランをアップグレード: {{url}}",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
   },
   services: {
     description:
-      "サービスとカスタムドメインの状態を表示します。アクション: list (全サービスとカスタムドメイン情報一覧), stats-reset (統計リセット)。verbose=true で全データ表示。",
+      "サービス (モニターのグループ) を管理します。アクション: list (全サービス一覧), create (新規作成。slug 省略時は name から自動生成), update (ID 指定で名前/slug/公開設定を変更), delete (ID 指定で削除。モニターはデフォルトサービスへ移動), stats-reset (統計リセット)。verbose=true で全データ表示。",
     noServices: "サービスが設定されていません。",
     title: "サービス ({{count}}):",
-    unknownAction:
-      "不明なアクション: {{action}}。使用可能: {{actions}}",
-    upgradePlan:
-      "{{msg}}\nプランをアップグレード: {{url}}",
-    customDomainHint: "カスタムドメインはダッシュボードから設定できます。",
+    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
+    nameRequired: "create には name が必要です。",
+    slugRequired:
+      "name から slug を生成できませんでした。slug を明示指定してください (小文字英数字とハイフン、2文字以上)。",
+    idRequired: "{{action}} にはサービス ID が必要です。",
+    nothingToUpdate:
+      "更新する項目がありません。name / slug / description / isPublic のいずれかを指定してください。",
+    created: "サービスを作成しました: {{name}} (ID: {{id}}, slug: {{slug}})",
+    updated: "サービスを更新しました: {{name}} (ID: {{id}})",
+    deleted: "サービス {{id}} を削除しました。モニターはデフォルトサービスへ移動しました。",
+    statsReset: "統計リセット: {{count}} 件のレコードを削除しました",
   },
   auditLogs: {
     description:
       "監査ログを表示します。アクション: list (フィルター付き監査証跡を表示)。verbose=true で全データ表示。",
     noLogs: "監査ログが見つかりません。",
     title: "監査ログ ({{count}} 件):",
-    unknownAction:
-      "不明なアクション: {{action}}。使用可能: {{actions}}",
-    upgradePlan:
-      "{{msg}}\nプランをアップグレード: {{url}}",
+    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
+    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
   },
   notificationChannels: {
-    description: "通知チャンネルをテストします。アクション: test (テスト通知を送信して設定を確認)。チャンネルIDが必要です。",
+    description:
+      "通知チャンネルをテストします。アクション: test (テスト通知を送信して設定を確認)。チャンネルIDが必要です。",
     testSent: "チャンネル {{id}} にテスト通知を送信しました。",
     idRequired: "test アクションには id が必要です",
     upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
     unknownAction: "不明なアクション: {{action}}。使用可能: test",
-  },
-  webhookSubscriptions: {
-    description: "Webhookサブスクリプションを管理します。アクション: list (一覧), create (作成), delete (削除)。イベント: incident.created, incident.resolved, webchange.detected。",
-    noSubscriptions: "Webhookサブスクリプションが設定されていません。",
-    title: "Webhookサブスクリプション ({{count}}):",
-    created: "Webhookサブスクリプション {{id}} を作成しました ({{targetUrl}})",
-    deleted: "Webhookサブスクリプション {{id}} を削除しました。",
-    targetUrlRequired: "create アクションには targetUrl が必要です (HTTPS URL)",
-    secretRequired: "create アクションには secret が必要です (16文字以上)",
-    eventsRequired: "create アクションには events が必要です (例: incident.created)",
-    idRequired: "{{action}} アクションには id が必要です",
-    unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
-    upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
   },
 };
 
@@ -356,13 +326,7 @@ export function detectLanguage(acceptLanguage: string): Language {
 /**
  * Simple template interpolation: replaces `{{key}}` with values from `vars`.
  */
-export function t(
-  template: string,
-  vars?: Record<string, string | number>,
-): string {
+export function t(template: string, vars?: Record<string, string | number>): string {
   if (!vars) return template;
-  return template.replace(
-    /\{\{(\w+)\}\}/g,
-    (_, key) => String(vars[key] ?? `{{${key}}}`),
-  );
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => String(vars[key] ?? `{{${key}}}`));
 }

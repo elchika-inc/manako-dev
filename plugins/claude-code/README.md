@@ -47,9 +47,13 @@ git clone https://github.com/elchika-inc/manako-dev.git
 |--------|-----------|------|
 | **setup** | 「manako をセットアップして」 | CLI/MCP の初期設定ガイド |
 | **monitor-status** | 「モニターの状態を確認して」 | モニター状態確認・即座チェック |
-| **create-monitor** | 「example.com を監視して」 | モニター作成 (7 タイプ対応) |
+| **create-monitor** | 「example.com を監視して」 | モニター作成 (3 タイプ対応) |
 | **list-incidents** | 「インシデント一覧を見せて」 | インシデント一覧・フィルタ |
 | **acknowledge-incident** | 「インシデントを確認済みにして」 | インシデント確認済みマーク |
+| **notification-channels** | 「通知チャンネルを一覧して」 | 通知チャンネルの一覧・管理 |
+| **audit-logs** | 「監査ログを見せて」 | 監査ログの取得・フィルタ |
+| **maintenance** | 「メンテナンス期間を設定して」 | メンテナンスウィンドウの作成・管理 |
+| **admin-review** | 「サービス全体の状況を分析して」 | 運営者向けの読み取り専用分析（本パッケージのみ） |
 
 ## ツール優先順位
 
@@ -66,10 +70,6 @@ git clone https://github.com/elchika-inc/manako-dev.git
 | HTTP | Web サイト/API の死活監視 |
 | TCP | ポート接続確認 |
 | Ping | Ping 応答確認 |
-| Heartbeat | cron/バッチの生存確認 |
-| WebChange | Web ページの変更検知 |
-| SSL | SSL 証明書の期限監視 |
-| Domain | ドメインの期限監視 |
 
 ## 要件
 

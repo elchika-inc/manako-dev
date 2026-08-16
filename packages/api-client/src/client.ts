@@ -4,6 +4,7 @@ import type {
   MonitorConfig,
   IncidentType,
   IncidentStatus,
+  CheckResult,
 } from "@manako/shared";
 
 export interface ManakoClientConfig {
@@ -42,6 +43,34 @@ export interface ApiError {
   upgradeUrl?: string;
 }
 
+// #1246: プレーンオブジェクトを throw すると CLI 等で String(err) が "[object Object]" になるため、
+// Error インスタンスとして throw する。プロパティ (code/status/upgradeUrl) は ApiError 互換。
+// 注意: upgradeUrl は `declare` で型のみ宣言する。ES2022 の useDefineForClassFields で
+// 通常のフィールド宣言をすると own property が常に define され、消費側の
+// `"upgradeUrl" in err` 判定が誤爆するため、値がある時のみ代入する。
+export class ManakoApiError extends Error {
+  code: string;
+  status: number;
+  declare upgradeUrl?: string;
+
+  constructor(payload: ApiError) {
+    super(payload.message);
+    this.name = "ManakoApiError";
+    this.code = payload.code;
+    this.status = payload.status;
+    if (payload.upgradeUrl !== undefined) {
+      this.upgradeUrl = payload.upgradeUrl;
+    }
+  }
+}
+
+type RawService = Omit<Service, "isPublic"> & { isPublic: boolean | number };
+
+/** Normalize D1 integer flags on service rows to booleans. */
+function normalizeService(raw: RawService): Service {
+  return { ...raw, isPublic: !!raw.isPublic };
+}
+
 export interface Service {
   id: string;
   teamId: string;
@@ -50,8 +79,6 @@ export interface Service {
   description: string | null;
   isPublic: boolean;
   maintenanceUntil: string | null;
-  customDomain: string | null;
-  customDomainStatus: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,16 +93,6 @@ export interface AuditLog {
   resourceId: string | null;
   metadata: Record<string, unknown> | null;
   ipAddress: string | null;
-  createdAt: string;
-}
-
-export interface WebhookSubscription {
-  id: string;
-  teamId: string;
-  targetUrl: string;
-  events: string[];
-  description: string | null;
-  isActive: boolean;
   createdAt: string;
 }
 
@@ -103,7 +120,7 @@ export class ManakoClient {
       method,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
@@ -112,16 +129,26 @@ export class ManakoClient {
       // E6: Handle non-JSON and unexpected error response formats
       let errorPayload: ApiError;
       try {
-        const errBody = await res.json() as { error?: { code?: string; message?: string; status?: number; upgradeUrl?: string } };
+        const errBody = (await res.json()) as {
+          error?: { code?: string; message?: string; status?: number; upgradeUrl?: string };
+        };
         if (errBody?.error?.code && errBody?.error?.message) {
           errorPayload = errBody.error as ApiError;
         } else {
-          errorPayload = { code: "UNKNOWN", message: `Request failed (${res.status})`, status: res.status };
+          errorPayload = {
+            code: "UNKNOWN",
+            message: `Request failed (${res.status})`,
+            status: res.status,
+          };
         }
       } catch {
-        errorPayload = { code: "UNKNOWN", message: `Request failed (${res.status})`, status: res.status };
+        errorPayload = {
+          code: "UNKNOWN",
+          message: `Request failed (${res.status})`,
+          status: res.status,
+        };
       }
-      throw errorPayload;
+      throw new ManakoApiError(errorPayload);
     }
 
     // Handle 204 No Content
@@ -131,9 +158,13 @@ export class ManakoClient {
 
     // E7: Handle success response JSON parse failure
     try {
-      return await res.json() as T;
+      return (await res.json()) as T;
     } catch {
-      throw { code: "PARSE_ERROR", message: `Invalid JSON response from ${method} ${path}`, status: res.status } as ApiError;
+      throw new ManakoApiError({
+        code: "PARSE_ERROR",
+        message: `Invalid JSON response from ${method} ${path}`,
+        status: res.status,
+      });
     }
   }
 
@@ -144,7 +175,10 @@ export class ManakoClient {
   }
 
   async getMonitor(id: string): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: RawMonitor }>("GET", `/monitors/${encodeURIComponent(id)}`);
+    const res = await this.request<{ monitor: RawMonitor }>(
+      "GET",
+      `/monitors/${encodeURIComponent(id)}`,
+    );
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -153,9 +187,12 @@ export class ManakoClient {
     name: string;
     config: Record<string, unknown>;
     intervalSeconds?: number;
-  }): Promise<{ monitor: Monitor; agentToken?: string }> {
-    const res = await this.request<{ monitor: RawMonitor; agentToken?: string }>("POST", "/monitors", data);
-    return { monitor: normalizeMonitor(res.monitor), ...(res.agentToken !== undefined && { agentToken: res.agentToken }) };
+    serviceId?: string;
+  }): Promise<{ monitor: Monitor }> {
+    const res = await this.request<{ monitor: RawMonitor }>("POST", "/monitors", data);
+    return {
+      monitor: normalizeMonitor(res.monitor),
+    };
   }
 
   async deleteMonitor(id: string): Promise<{ ok: boolean }> {
@@ -171,7 +208,11 @@ export class ManakoClient {
       isActive?: boolean;
     },
   ): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: RawMonitor }>("PUT", `/monitors/${encodeURIComponent(id)}`, data);
+    const res = await this.request<{ monitor: RawMonitor }>(
+      "PUT",
+      `/monitors/${encodeURIComponent(id)}`,
+      data,
+    );
     return { monitor: normalizeMonitor(res.monitor) };
   }
 
@@ -180,11 +221,18 @@ export class ManakoClient {
     maintenanceUntil: string,
     notify?: boolean,
   ): Promise<{ monitor: Monitor }> {
-    return this.request("POST", `/monitors/${encodeURIComponent(id)}/maintenance`, { maintenanceUntil, notify });
+    return this.request("POST", `/monitors/${encodeURIComponent(id)}/maintenance`, {
+      maintenanceUntil,
+      notify,
+    });
   }
 
   async endMaintenance(id: string, notify?: boolean): Promise<{ monitor: Monitor }> {
-    return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/maintenance`, notify ? { notify } : undefined);
+    return this.request(
+      "DELETE",
+      `/monitors/${encodeURIComponent(id)}/maintenance`,
+      notify ? { notify } : undefined,
+    );
   }
 
   async startBulkMaintenance(
@@ -192,14 +240,21 @@ export class ManakoClient {
     maintenanceUntil: string,
     notify?: boolean,
   ): Promise<{ updated: number }> {
-    return this.request("POST", "/monitors/bulk/maintenance", { monitorIds, maintenanceUntil, notify });
+    return this.request("POST", "/monitors/bulk/maintenance", {
+      monitorIds,
+      maintenanceUntil,
+      notify,
+    });
   }
 
   async endBulkMaintenance(monitorIds: string[], notify?: boolean): Promise<{ updated: number }> {
     return this.request("DELETE", "/monitors/bulk/maintenance", { monitorIds, notify });
   }
 
-  async startAllMaintenance(maintenanceUntil: string, notify?: boolean): Promise<{ updated: number }> {
+  async startAllMaintenance(
+    maintenanceUntil: string,
+    notify?: boolean,
+  ): Promise<{ updated: number }> {
     return this.request("POST", "/monitors/all/maintenance", { maintenanceUntil, notify });
   }
 
@@ -207,26 +262,39 @@ export class ManakoClient {
     return this.request("DELETE", "/monitors/all/maintenance", notify ? { notify } : undefined);
   }
 
-  async triggerCheck(id: string): Promise<{ result: { status: string; responseTimeMs?: number; errorMessage?: string | null }; monitor: Monitor }> {
-    const res = await this.request<{ result: { status: string; responseTimeMs?: number; errorMessage?: string | null }; monitor: RawMonitor }>("POST", `/monitors/${encodeURIComponent(id)}/check`);
+  // status は API 側の executeCheck() が返す CheckResult をそのまま JSON 化したもの。
+  // 正本 (@manako/shared の CheckResult) を参照して二重管理を避ける。
+  async triggerCheck(id: string): Promise<{
+    result: {
+      status: CheckResult["status"];
+      responseTimeMs?: number;
+      errorMessage?: string | null;
+    };
+    monitor: Monitor;
+  }> {
+    const res = await this.request<{
+      result: {
+        status: CheckResult["status"];
+        responseTimeMs?: number;
+        errorMessage?: string | null;
+      };
+      monitor: RawMonitor;
+    }>("POST", `/monitors/${encodeURIComponent(id)}/check`);
     return { result: res.result, monitor: normalizeMonitor(res.monitor) };
   }
 
-  async baselineReset(id: string): Promise<{ monitor: Monitor }> {
-    const res = await this.request<{ monitor: RawMonitor }>("POST", `/monitors/${encodeURIComponent(id)}/baseline-reset`);
-    return { monitor: normalizeMonitor(res.monitor) };
-  }
-
-  async getAgentToken(id: string): Promise<{ token: string; metricsUrl: string }> {
-    return this.request("GET", `/monitors/${encodeURIComponent(id)}/agent-token`);
-  }
-
-  async resetMonitorStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
+  async resetMonitorStats(
+    id: string,
+    before?: string,
+  ): Promise<{ ok: boolean; deletedCount: number }> {
     const query = before ? `?before=${encodeURIComponent(before)}` : "";
     return this.request("DELETE", `/monitors/${encodeURIComponent(id)}/stats${query}`);
   }
 
-  async resetServiceStats(id: string, before?: string): Promise<{ ok: boolean; deletedCount: number }> {
+  async resetServiceStats(
+    id: string,
+    before?: string,
+  ): Promise<{ ok: boolean; deletedCount: number }> {
     const query = before ? `?before=${encodeURIComponent(before)}` : "";
     return this.request("DELETE", `/services/${encodeURIComponent(id)}/stats${query}`);
   }
@@ -241,11 +309,18 @@ export class ManakoClient {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}/acknowledge`);
   }
 
-  async createIncident(data: { title: string; cause?: string; serviceId?: string }): Promise<{ incident: Incident }> {
+  async createIncident(data: {
+    title: string;
+    cause?: string;
+    serviceId?: string;
+  }): Promise<{ incident: Incident }> {
     return this.request("POST", "/incidents", data);
   }
 
-  async updateIncident(id: string, data: { title?: string; cause?: string }): Promise<{ incident: Incident }> {
+  async updateIncident(
+    id: string,
+    data: { title?: string; cause?: string },
+  ): Promise<{ incident: Incident }> {
     return this.request("PUT", `/incidents/${encodeURIComponent(id)}`, data);
   }
 
@@ -259,8 +334,38 @@ export class ManakoClient {
 
   // Services
   async listServices(): Promise<{ services: Service[] }> {
-    const res = await this.request<{ services: (Omit<Service, "isPublic"> & { isPublic: boolean | number })[] }>("GET", "/services");
-    return { services: res.services.map((s) => ({ ...s, isPublic: !!s.isPublic })) };
+    const res = await this.request<{ services: RawService[] }>("GET", "/services");
+    return { services: res.services.map(normalizeService) };
+  }
+
+  async createService(data: {
+    name: string;
+    slug: string;
+    description?: string;
+  }): Promise<{ service: Service }> {
+    const res = await this.request<{ service: RawService }>("POST", "/services", data);
+    return { service: normalizeService(res.service) };
+  }
+
+  async updateService(
+    id: string,
+    data: {
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      isPublic?: boolean;
+    },
+  ): Promise<{ service: Service }> {
+    const res = await this.request<{ service: RawService }>(
+      "PUT",
+      `/services/${encodeURIComponent(id)}`,
+      data,
+    );
+    return { service: normalizeService(res.service) };
+  }
+
+  async deleteService(id: string): Promise<{ ok: boolean }> {
+    return this.request("DELETE", `/services/${encodeURIComponent(id)}`);
   }
 
   // Notification Channels
@@ -288,24 +393,6 @@ export class ManakoClient {
     if (options?.limit) params.append("limit", String(options.limit));
     const query = params.toString();
     return this.request("GET", `/audit-logs${query ? "?" + query : ""}`);
-  }
-
-  // Webhook Subscriptions
-  async listWebhookSubscriptions(): Promise<{ subscriptions: WebhookSubscription[] }> {
-    return this.request("GET", "/webhook-subscriptions");
-  }
-
-  async createWebhookSubscription(data: {
-    targetUrl: string;
-    secret: string;
-    events: string[];
-    description?: string;
-  }): Promise<{ subscription: WebhookSubscription }> {
-    return this.request("POST", "/webhook-subscriptions", data);
-  }
-
-  async deleteWebhookSubscription(id: string): Promise<void> {
-    await this.request("DELETE", `/webhook-subscriptions/${encodeURIComponent(id)}`);
   }
 }
 

@@ -10,7 +10,7 @@ Manako の監査ログを表示・フィルタする。有料プラン専用機�
 ## Tool Detection
 
 1. Bash で `which manako` を実行 → 成功なら CLI を使用
-2. ツール一覧に `mcp__manako__audit_logs` が存在するか確認 → あれば MCP を使用
+2. ツール一覧に `mcp__manako__audit-logs` が存在するか確認 → あれば MCP を使用
 3. いずれもなければ `curl` で API を直接呼び出し
 
 ## Operations
@@ -24,7 +24,7 @@ manako audit-logs list
 
 **MCP:**
 ```
-mcp__manako__audit_logs(action: "list")
+mcp__manako__audit-logs(action: "list")
 ```
 
 **API:**
@@ -38,12 +38,12 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 **CLI:**
 ```bash
 manako audit-logs list --action "monitor."
-manako audit-logs list --action "team." --limit 20
+manako audit-logs list --action "incident." --limit 20
 ```
 
 **MCP:**
 ```
-mcp__manako__audit_logs(action: "list", actionFilter: "monitor.", limit: 20)
+mcp__manako__audit-logs(action: "list", actionFilter: "monitor.", limit: 20)
 ```
 
 **API:**
@@ -57,7 +57,7 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 | パラメータ | 説明 |
 |-----------|------|
 | `action` | アクション名 (末尾 `.` でプレフィックスマッチ、例: `monitor.`) |
-| `resourceType` | monitor, incident, api_key, notification_channel, status_page, team, invitation, team_member, user |
+| `resourceType` | monitor, incident, api_key, notification_channel, service, user |
 | `userId` | 操作者 ID でフィルタ |
 | `from` | 開始日時 (ISO 8601) |
 | `to` | 終了日時 (ISO 8601) |
@@ -69,12 +69,11 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 | カテゴリ | アクション |
 |---------|-----------|
 | `user.*` | signup, login, logout |
-| `team.*` | update, member.invite, member.invite.cancel, member.invite.accept, member.role.change, member.remove |
 | `monitor.*` | create, update, delete |
 | `incident.*` | create, update, acknowledge, resolve, delete |
 | `api_key.*` | create, delete |
 | `notification_channel.*` | create, update, delete |
-| `status_page.*` | create, update, delete, custom_domain.create, custom_domain.verify, custom_domain.delete |
+| `service.*` | create, update, delete |
 | `account.*` | deletion_requested |
 
 ## Response Fields

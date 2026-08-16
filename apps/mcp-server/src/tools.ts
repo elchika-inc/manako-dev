@@ -3,10 +3,10 @@ import {
   type Monitor,
   type Incident,
   type Service,
-  type WebhookSubscription,
   type MonitorType,
   type IncidentStatus,
 } from "@manako/api-client";
+import { slugifyServiceName } from "@manako/shared";
 import type { Translation } from "./i18n.js";
 import { t } from "./i18n.js";
 
@@ -18,14 +18,12 @@ const MONITOR_ACTIONS = [
   "delete",
   "check",
   "maintenance",
-  "baseline-reset",
   "stats-reset",
 ] as const;
 const INCIDENT_ACTIONS = ["list", "acknowledge", "create", "update", "resolve", "delete"] as const;
-const SERVICE_ACTIONS = ["list", "stats-reset"] as const;
+const SERVICE_ACTIONS = ["list", "create", "update", "delete", "stats-reset"] as const;
 const AUDIT_LOG_ACTIONS = ["list"] as const;
 const NOTIFICATION_CHANNEL_ACTIONS = ["test"] as const;
-const WEBHOOK_SUBSCRIPTION_ACTIONS = ["list", "create", "delete"] as const;
 
 export const KNOWN_TOOL_NAMES = [
   "monitors",
@@ -33,7 +31,6 @@ export const KNOWN_TOOL_NAMES = [
   "services",
   "audit-logs",
   "notification-channels",
-  "webhook-subscriptions",
 ] as const;
 export type KnownToolName = (typeof KNOWN_TOOL_NAMES)[number];
 
@@ -59,15 +56,15 @@ function formatMonitorCompact(m: Monitor): string {
 
 function formatIncidentCompact(i: Incident): string {
   const emoji = i.status === "ongoing" ? "🔴" : i.status === "resolved" ? "✅" : "👀";
-  const started = new Date(i.startedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+  const started = i.startedAt
+    ? new Date(i.startedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+    : "unknown";
   return `${emoji} [${i.status}] ${i.title || i.id.slice(0, 12)} — started ${started}${i.resolvedAt ? `, resolved ${new Date(i.resolvedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}` : ""}`;
 }
 
 function formatServiceCompact(s: Service): string {
   const visibility = s.isPublic ? "public" : "private";
-  let line = `${s.name} — /${s.slug} (${visibility})`;
-  if (s.customDomain) line += ` | ${s.customDomain} [${s.customDomainStatus ?? "unknown"}]`;
-  return line;
+  return `${s.name} — /${s.slug} (${visibility})`;
 }
 
 function formatAuditLogCompact(log: any): string {
@@ -95,10 +92,14 @@ const MONITORS_INPUT_SCHEMA = {
     url: { type: "string", description: "URL (create)" },
     type: {
       type: "string",
-      enum: ["http", "tcp", "ping", "heartbeat", "webchange", "ssl", "domain"],
+      enum: ["http", "tcp", "ping"],
       description: "Monitor type (create, default: http)",
     },
     config: { type: "object", description: "Type-specific config (create/update non-http types)" },
+    serviceId: {
+      type: "string",
+      description: "Service ID to attach the monitor to (create, default: the default service)",
+    },
     intervalSeconds: {
       type: "integer",
       minimum: 300,
@@ -146,7 +147,15 @@ const SERVICES_INPUT_SCHEMA = {
   required: ["action"] as const,
   properties: {
     action: { type: "string", enum: [...SERVICE_ACTIONS], description: "Operation" },
-    id: { type: "string", description: "Service ID (stats-reset)" },
+    id: { type: "string", description: "Service ID (update/delete/stats-reset)" },
+    name: { type: "string", description: "Service name (create/update)" },
+    slug: {
+      type: "string",
+      description:
+        "URL slug, lowercase alphanumeric with hyphens (create: derived from name if omitted / update)",
+    },
+    description: { type: "string", description: "Service description (create/update)" },
+    isPublic: { type: "boolean", description: "Make the status page public (update)" },
     before: {
       type: "string",
       description: "Reset stats before this date (YYYY-MM-DD). Omit for all time.",
@@ -184,24 +193,6 @@ const NOTIFICATION_CHANNELS_INPUT_SCHEMA = {
   },
 };
 
-const WEBHOOK_SUBSCRIPTIONS_INPUT_SCHEMA = {
-  type: "object" as const,
-  required: ["action"] as const,
-  properties: {
-    action: { type: "string", enum: [...WEBHOOK_SUBSCRIPTION_ACTIONS], description: "Operation" },
-    id: { type: "string", description: "Subscription ID (delete)" },
-    targetUrl: { type: "string", description: "HTTPS URL to receive webhooks (create)" },
-    secret: { type: "string", description: "Signing secret, min 16 chars (create)" },
-    events: {
-      type: "array",
-      items: { type: "string" },
-      description: "Event types: incident.created, incident.resolved, webchange.detected (create)",
-    },
-    description: { type: "string", description: "Optional description (create)" },
-    verbose: { type: "boolean", default: false, description: "Full API response" },
-  },
-};
-
 // --- Static tool list: description + schema only, no client needed ---
 
 export function getToolSchemas(
@@ -224,11 +215,6 @@ export function getToolSchemas(
       name: "notification-channels",
       description: tr.notificationChannels.description,
       inputSchema: NOTIFICATION_CHANNELS_INPUT_SCHEMA,
-    },
-    {
-      name: "webhook-subscriptions",
-      description: tr.webhookSubscriptions.description,
-      inputSchema: WEBHOOK_SUBSCRIPTIONS_INPUT_SCHEMA,
     },
   ];
 }
@@ -279,6 +265,7 @@ async function executeMonitors(
           name: args.name as string,
           config,
           intervalSeconds: (args.intervalSeconds as number) ?? 300,
+          ...(args.serviceId ? { serviceId: args.serviceId as string } : {}),
         });
         return ok(
           t(tm.monitors.created, { summary: formatMonitorCompact(monitor), id: monitor.id }),
@@ -288,14 +275,17 @@ async function executeMonitors(
         if (!args.id) return err(t(tm.monitors.idRequired, { action: "update" }));
         const updateData: Record<string, unknown> = {};
         if (args.name !== undefined) updateData.name = args.name;
-        if (args.url !== undefined)
+        // config (explicit full object) takes precedence over url (convenience shorthand)
+        if (args.config !== undefined) {
+          updateData.config = args.config;
+        } else if (args.url !== undefined) {
           updateData.config = {
             url: args.url,
             method: "GET",
             expectedStatus: 200,
             timeoutMs: 10000,
           };
-        if (args.config !== undefined) updateData.config = args.config;
+        }
         if (args.intervalSeconds !== undefined) updateData.intervalSeconds = args.intervalSeconds;
         if (args.isActive !== undefined) updateData.isActive = args.isActive;
         const { monitor } = await client.updateMonitor(args.id as string, updateData);
@@ -312,12 +302,8 @@ async function executeMonitors(
         if (!args.id) return err(t(tm.monitors.idRequired, { action: "check" }));
         const { result, monitor } = await client.triggerCheck(args.id as string);
         if (args.verbose) return ok(JSON.stringify({ result, monitor }, null, 2));
-        const status =
-          result.status === "up"
-            ? "🟢 up"
-            : result.status === "down"
-              ? "🔴 down"
-              : `🟡 ${result.status}`;
+        // result.status は CheckResult["status"] = "up" | "down" のみ
+        const status = result.status === "up" ? "🟢 up" : "🔴 down";
         const time = result.responseTimeMs !== undefined ? ` (${result.responseTimeMs}ms)` : "";
         const errMsg = result.errorMessage ? `\nError: ${result.errorMessage}` : "";
         return ok(
@@ -381,18 +367,13 @@ async function executeMonitors(
           }),
         );
       }
-      case "baseline-reset": {
-        if (!args.id) return err(t(tm.monitors.idRequired, { action: "baseline-reset" }));
-        const { monitor } = await client.baselineReset(args.id as string);
-        return ok(t(tm.monitors.baselineReset, { name: monitor.name, id: monitor.id }));
-      }
       case "stats-reset": {
         if (!args.id) return err(t(tm.monitors.idRequired, { action: "stats-reset" }));
         const result = await client.resetMonitorStats(
           args.id as string,
           args.before as string | undefined,
         );
-        return ok(`Stats reset: ${result.deletedCount} records deleted`);
+        return ok(t(tm.monitors.statsReset, { count: result.deletedCount }));
       }
       default:
         return err(
@@ -494,18 +475,49 @@ async function executeServices(
         if (args.verbose) return ok(JSON.stringify(services, null, 2));
         if (services.length === 0) return ok(tm.services.noServices);
         const summary = services.map(formatServiceCompact).join("\n");
-        const hint = services.some((s) => !s.customDomain)
-          ? `\n\n${tm.services.customDomainHint}`
-          : "";
-        return ok(`${t(tm.services.title, { count: services.length })}\n${summary}${hint}`);
+        return ok(`${t(tm.services.title, { count: services.length })}\n${summary}`);
+      }
+      case "create": {
+        if (!args.name) return err(tm.services.nameRequired);
+        const slug = (args.slug as string | undefined) ?? slugifyServiceName(args.name as string);
+        if (!slug) return err(tm.services.slugRequired);
+        const { service } = await client.createService({
+          name: args.name as string,
+          slug,
+          ...(args.description ? { description: args.description as string } : {}),
+        });
+        return ok(
+          t(tm.services.created, { name: service.name, id: service.id, slug: service.slug }),
+        );
+      }
+      case "update": {
+        if (!args.id) return err(t(tm.services.idRequired, { action: "update" }));
+        const data: {
+          name?: string;
+          slug?: string;
+          description?: string;
+          isPublic?: boolean;
+        } = {};
+        if (args.name !== undefined) data.name = args.name as string;
+        if (args.slug !== undefined) data.slug = args.slug as string;
+        if (args.description !== undefined) data.description = args.description as string;
+        if (args.isPublic !== undefined) data.isPublic = args.isPublic as boolean;
+        if (Object.keys(data).length === 0) return err(tm.services.nothingToUpdate);
+        const { service } = await client.updateService(args.id as string, data);
+        return ok(t(tm.services.updated, { name: service.name, id: service.id }));
+      }
+      case "delete": {
+        if (!args.id) return err(t(tm.services.idRequired, { action: "delete" }));
+        await client.deleteService(args.id as string);
+        return ok(t(tm.services.deleted, { id: args.id as string }));
       }
       case "stats-reset": {
-        if (!args.id) return err("Service ID is required for stats-reset");
+        if (!args.id) return err(t(tm.services.idRequired, { action: "stats-reset" }));
         const result = await client.resetServiceStats(
           args.id as string,
           args.before as string | undefined,
         );
-        return ok(`Stats reset: ${result.deletedCount} records deleted`);
+        return ok(t(tm.services.statsReset, { count: result.deletedCount }));
       }
       default:
         return err(
@@ -580,65 +592,6 @@ async function executeNotificationChannels(
   }
 }
 
-async function executeWebhookSubscriptions(
-  args: Record<string, unknown>,
-  client: ManakoClient,
-  tm: Translation,
-): Promise<ToolResult> {
-  try {
-    switch (args.action) {
-      case "list": {
-        const { subscriptions } = await client.listWebhookSubscriptions();
-        if (args.verbose) return ok(JSON.stringify(subscriptions, null, 2));
-        if (subscriptions.length === 0) return ok(tm.webhookSubscriptions.noSubscriptions);
-        const summary = subscriptions
-          .map(
-            (s: WebhookSubscription) =>
-              `${s.id} — ${s.targetUrl} [${s.events.join(", ")}]${s.description ? ` (${s.description})` : ""}`,
-          )
-          .join("\n");
-        return ok(
-          `${t(tm.webhookSubscriptions.title, { count: subscriptions.length })}\n${summary}`,
-        );
-      }
-      case "create": {
-        if (!args.targetUrl) return err(tm.webhookSubscriptions.targetUrlRequired);
-        if (!args.secret) return err(tm.webhookSubscriptions.secretRequired);
-        if (!args.events || (args.events as unknown[]).length === 0)
-          return err(tm.webhookSubscriptions.eventsRequired);
-        const { subscription } = await client.createWebhookSubscription({
-          targetUrl: args.targetUrl as string,
-          secret: args.secret as string,
-          events: args.events as string[],
-          description: args.description as string | undefined,
-        });
-        return ok(
-          t(tm.webhookSubscriptions.created, {
-            id: subscription.id,
-            targetUrl: subscription.targetUrl,
-          }),
-        );
-      }
-      case "delete": {
-        if (!args.id) return err(t(tm.webhookSubscriptions.idRequired, { action: "delete" }));
-        await client.deleteWebhookSubscription(args.id as string);
-        return ok(t(tm.webhookSubscriptions.deleted, { id: args.id as string }));
-      }
-      default:
-        return err(
-          t(tm.webhookSubscriptions.unknownAction, {
-            action: args.action as string,
-            actions: WEBHOOK_SUBSCRIPTION_ACTIONS.join(", "),
-          }),
-        );
-    }
-  } catch (e: any) {
-    if (e.upgradeUrl)
-      return err(t(tm.webhookSubscriptions.upgradePlan, { msg: e.message, url: e.upgradeUrl }));
-    return err(e.message || String(e));
-  }
-}
-
 // --- Single dispatcher: only the called tool is executed ---
 
 export async function executeTool(
@@ -658,8 +611,6 @@ export async function executeTool(
       return executeAuditLogs(args, client, tr);
     case "notification-channels":
       return executeNotificationChannels(args, client, tr);
-    case "webhook-subscriptions":
-      return executeWebhookSubscriptions(args, client, tr);
     default:
       return {
         content: [{ type: "text", text: `Error: ${t(tr.auth.unknownTool, { name: toolName })}` }],
