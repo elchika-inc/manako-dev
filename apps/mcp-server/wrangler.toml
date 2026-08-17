@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "SESSION_KV"
-id = "460779e9c02c4490bac5d604772c0d67"
+id = "9e4ceac81f3f4108896ff623ef1d1bf2"
 
 [vars]
 ENVIRONMENT = "development"
@@ -19,7 +19,7 @@ name = "manako-mcp-server"
 
 [[env.production.kv_namespaces]]
 binding = "SESSION_KV"
-id = "460779e9c02c4490bac5d604772c0d67"
+id = "9e4ceac81f3f4108896ff623ef1d1bf2"
 
 [env.production.vars]
 ENVIRONMENT = "production"
