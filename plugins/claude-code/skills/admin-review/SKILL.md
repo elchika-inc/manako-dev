@@ -16,6 +16,7 @@ MANAKO_ADMIN_API_KEY=<admin_api_key>
 ```
 
 実行前に確認:
+
 ```bash
 grep MANAKO_ADMIN_API_KEY .env
 ```
@@ -74,6 +75,7 @@ manako admin inquiries --status open
 ```
 
 オープンがなければ `in_progress` も確認:
+
 ```bash
 manako admin inquiries --status in_progress
 ```

@@ -18,16 +18,19 @@ Manako のインシデントを確認済み (acknowledged) にマーク、また
 ### Acknowledge
 
 **CLI:**
+
 ```bash
 manako incidents ack <incident-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "acknowledge", id: "<incident-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/incidents/<incident-id>/acknowledge
@@ -38,16 +41,19 @@ curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
 インシデントを手動で解決する。
 
 **CLI:**
+
 ```bash
 manako incidents resolve <incident-id> --cause "Root cause identified and fixed"
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "resolve", id: "<incident-id>", cause: "Root cause identified and fixed")
 ```
 
 **API:**
+
 ```bash
 curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \

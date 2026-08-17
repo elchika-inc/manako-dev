@@ -20,16 +20,19 @@ description: This skill should be used when the user asks to "通知チャンネ
 チャンネルの設定が正しいか確認するため、テスト通知を送信する。
 
 **CLI:**
+
 ```bash
 manako notification-channels test <channel-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__notification-channels(action: "test", id: "<channel-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/notification-channels/<channel-id>/test

@@ -18,17 +18,20 @@ Manako モニターのメンテナンスウィンドウ管理を行う。
 ### 単一モニターのメンテナンス開始
 
 **CLI:**
+
 ```bash
 manako monitors maintenance <monitor-id> --duration 60
 manako monitors maintenance <monitor-id> --until 2026-04-01T12:00:00Z
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", id: "<monitor-id>", maintenanceUntil: "2026-04-01T12:00:00Z")
 ```
 
 **API:**
+
 ```bash
 # 自動解除あり (デフォルト)
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
@@ -40,16 +43,19 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### 単一モニターのメンテナンス終了
 
 **CLI:**
+
 ```bash
 manako monitors maintenance <monitor-id> --end
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", id: "<monitor-id>", end: true)
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>/maintenance
@@ -58,16 +64,19 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### 複数モニターの一括メンテナンス開始
 
 **CLI:**
+
 ```bash
 manako monitors maintenance --ids mon1,mon2,mon3 --duration 30
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", monitorIds: "mon1,mon2,mon3", maintenanceUntil: "2026-04-01T12:00:00Z")
 ```
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -78,16 +87,19 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### 複数モニターの一括メンテナンス終了
 
 **CLI:**
+
 ```bash
 manako monitors maintenance --ids mon1,mon2,mon3 --end
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", monitorIds: "mon1,mon2,mon3", end: true)
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -98,16 +110,19 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### 全モニターのメンテナンス開始
 
 **CLI:**
+
 ```bash
 manako monitors maintenance --all --duration 60
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", all: true, maintenanceUntil: "2026-04-01T12:00:00Z")
 ```
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -118,16 +133,19 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### 全モニターのメンテナンス終了
 
 **CLI:**
+
 ```bash
 manako monitors maintenance --all --end
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "maintenance", all: true, end: true)
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/all/maintenance
@@ -135,14 +153,14 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 
 ## Options
 
-| Option | 説明 |
-|--------|------|
+| Option                 | 説明                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
 | `--duration <minutes>` | メンテナンス期間(分)。未指定時はデフォルト60分 (MCP ツールの maintenanceUntil 省略時は10分) |
-| `--until <ISO8601>` | メンテナンス終了日時。最大7日間 |
-| `--notify` | メンテナンス開始/終了を通知チャンネルに送信 |
-| `--end` | メンテナンスを終了する |
-| `--ids <id1,id2>` | 一括操作対象のモニターID(カンマ区切り、最大100件) |
-| `--all` | 全アクティブモニターに適用 |
+| `--until <ISO8601>`    | メンテナンス終了日時。最大7日間                                                             |
+| `--notify`             | メンテナンス開始/終了を通知チャンネルに送信                                                 |
+| `--end`                | メンテナンスを終了する                                                                      |
+| `--ids <id1,id2>`      | 一括操作対象のモニターID(カンマ区切り、最大100件)                                           |
+| `--all`                | 全アクティブモニターに適用                                                                  |
 
 ## Constraints
 

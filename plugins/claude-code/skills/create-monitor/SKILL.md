@@ -18,11 +18,13 @@ description: This skill should be used when the user asks to "モニターを作
 最も一般的な HTTP モニター作成:
 
 **CLI:**
+
 ```bash
 manako monitors add https://example.com --name "Example Site" --type http --interval 300
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "create", name: "Example Site", type: "http", url: "https://example.com", intervalSeconds: 300)
 ```
@@ -30,6 +32,7 @@ mcp__manako__monitors(action: "create", name: "Example Site", type: "http", url:
 サービス（グループ）に紐付けて作成する場合は `serviceId` を指定する（CLI: `--service <id>` / API: body に `"serviceId"`）。省略時はデフォルトサービスに入る。サービス ID は `mcp__manako__services(action: "list", verbose: true)` か `manako services list` で確認できる。
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -39,11 +42,11 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 
 ## Monitor Types Overview
 
-| タイプ | 用途 | CLI target 例 |
-|--------|------|---------------|
-| `http` | Web サイト/API の死活監視 | `https://example.com` |
-| `tcp` | ポート接続確認 | `example.com` (+ `--config`) |
-| `ping` | Ping 応答確認 | `example.com` |
+| タイプ | 用途                      | CLI target 例                |
+| ------ | ------------------------- | ---------------------------- |
+| `http` | Web サイト/API の死活監視 | `https://example.com`        |
+| `tcp`  | ポート接続確認            | `example.com` (+ `--config`) |
+| `ping` | Ping 応答確認             | `example.com`                |
 
 各タイプの config 詳細は `references/monitor-types.md` を参照。
 
@@ -63,13 +66,13 @@ manako monitors add example.com --name "Ping" --type ping
 
 ## Parameters
 
-| パラメータ | 必須 | デフォルト | 説明 |
-|-----------|------|-----------|------|
-| `target` (CLI) / `url` (MCP) | Yes | - | 監視対象 URL またはホスト名 |
-| `--name` / `name` | No | target の値 | モニター名 |
-| `--type` / `type` | No | `http` | モニタータイプ |
-| `--interval` / `intervalSeconds` | No | `300` | チェック間隔 (Free: 300-86400 秒 / Pro: 180-86400 秒) |
-| `--config` / `config` | No | 自動生成 | タイプ別設定 JSON |
+| パラメータ                       | 必須 | デフォルト  | 説明                                                  |
+| -------------------------------- | ---- | ----------- | ----------------------------------------------------- |
+| `target` (CLI) / `url` (MCP)     | Yes  | -           | 監視対象 URL またはホスト名                           |
+| `--name` / `name`                | No   | target の値 | モニター名                                            |
+| `--type` / `type`                | No   | `http`      | モニタータイプ                                        |
+| `--interval` / `intervalSeconds` | No   | `300`       | チェック間隔 (Free: 300-86400 秒 / Pro: 180-86400 秒) |
+| `--config` / `config`            | No   | 自動生成    | タイプ別設定 JSON                                     |
 
 ## Constraints
 
@@ -82,4 +85,5 @@ manako monitors add example.com --name "Ping" --type ping
 ### Reference Files
 
 タイプ別の config フィールド詳細:
+
 - **`references/monitor-types.md`** - 全 3 タイプの config スキーマと設定例

@@ -130,10 +130,10 @@ manako logout
 
 ## Troubleshooting
 
-| 問題 | 対処 |
-|------|------|
-| `manako: command not found` | CLI 未インストール。Step 1 参照 |
-| `Not logged in` | `manako login` で認証。Step 2 参照 |
-| MCP ツールが見えない | Claude Code を再起動して `.mcp.json` を再読み込み |
-| `401 Unauthorized` | API Key が無効。ダッシュボードで再発行 |
-| `API key must start with mk_` | `mk_` プレフィックス付きの正しいキーを使用 |
+| 問題                          | 対処                                              |
+| ----------------------------- | ------------------------------------------------- |
+| `manako: command not found`   | CLI 未インストール。Step 1 参照                   |
+| `Not logged in`               | `manako login` で認証。Step 2 参照                |
+| MCP ツールが見えない          | Claude Code を再起動して `.mcp.json` を再読み込み |
+| `401 Unauthorized`            | API Key が無効。ダッシュボードで再発行            |
+| `API key must start with mk_` | `mk_` プレフィックス付きの正しいキーを使用        |

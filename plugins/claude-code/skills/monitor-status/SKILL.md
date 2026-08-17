@@ -20,16 +20,19 @@ Manako モニターの状態確認、詳細取得、即座チェックの実行�
 ステータスアイコン付きの概要を取得する。
 
 **CLI:**
+
 ```bash
 manako status
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "list")
 ```
 
 **API:**
+
 ```bash
 curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors
@@ -40,11 +43,13 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 全モニターの詳細 JSON を取得する。
 
 **CLI:**
+
 ```bash
 manako monitors list
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "list", verbose: true)
 ```
@@ -54,16 +59,19 @@ mcp__manako__monitors(action: "list", verbose: true)
 特定モニターの詳細情報を取得する。
 
 **CLI:**
+
 ```bash
 manako monitors get <monitor-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "get", id: "<monitor-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>
@@ -74,16 +82,19 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 モニターの即座チェックをトリガーし、リアルタイムの結果を取得する。
 
 **CLI:**
+
 ```bash
 manako monitors check <monitor-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "check", id: "<monitor-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>/check
@@ -91,33 +102,36 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 
 ## Response Fields
 
-| フィールド | 説明 |
-|-----------|------|
-| `id` | モニター ID (ULID) |
-| `name` | モニター名 |
-| `type` | タイプ (http, tcp, ping) |
-| `status` | 現在のステータス (up, down, degraded, unknown, paused) |
-| `isActive` | 有効/無効 |
-| `intervalSeconds` | チェック間隔 (秒) |
-| `lastCheckedAt` | 最終チェック日時 |
+| フィールド        | 説明                                                   |
+| ----------------- | ------------------------------------------------------ |
+| `id`              | モニター ID (ULID)                                     |
+| `name`            | モニター名                                             |
+| `type`            | タイプ (http, tcp, ping)                               |
+| `status`          | 現在のステータス (up, down, degraded, unknown, paused) |
+| `isActive`        | 有効/無効                                              |
+| `intervalSeconds` | チェック間隔 (秒)                                      |
+| `lastCheckedAt`   | 最終チェック日時                                       |
 
 ## Stats Reset
 
 モニターの統計データ(monitor_daily_stats)をリセットする。Pro+ プランが必要。
 
 **CLI:**
+
 ```bash
 manako monitors stats-reset <monitor-id>
 manako monitors stats-reset <monitor-id> --before 2024-01-01
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "stats-reset", id: "<monitor-id>")
 mcp__manako__monitors(action: "stats-reset", id: "<monitor-id>", before: "2024-01-01")
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>/stats
@@ -134,11 +148,13 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 - 特定モニターの深堀りは `manako monitors get <id>` で JSON を取得
 - 設定変更後やインシデント対応中は `manako monitors check <id>` で即座確認
 - モニター ID がわからない場合は先に `manako monitors list` で一覧取得
+
 ### モニター更新
 
 名前、インターバル、有効/無効を変更する。
 
 **CLI:**
+
 ```bash
 manako monitors update <monitor-id> --name "New Name"
 manako monitors update <monitor-id> --interval 600
@@ -147,6 +163,7 @@ manako monitors update <monitor-id> --resume
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "update", id: "<monitor-id>", name: "New Name")
 mcp__manako__monitors(action: "update", id: "<monitor-id>", intervalSeconds: 600)
@@ -154,6 +171,7 @@ mcp__manako__monitors(action: "update", id: "<monitor-id>", isActive: false)
 ```
 
 **API:**
+
 ```bash
 curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -164,16 +182,19 @@ curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### モニター削除
 
 **CLI:**
+
 ```bash
 manako monitors rm <monitor-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__monitors(action: "delete", id: "<monitor-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>

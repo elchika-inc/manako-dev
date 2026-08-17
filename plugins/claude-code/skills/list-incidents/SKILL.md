@@ -18,16 +18,19 @@ Manako のインシデントを管理する。一覧取得、手動作成、更�
 ### 全インシデント一覧
 
 **CLI:**
+
 ```bash
 manako incidents list
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "list")
 ```
 
 **API:**
+
 ```bash
 curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/incidents
@@ -36,26 +39,31 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 ### ステータスフィルタ
 
 **進行中のみ:**
+
 ```bash
 manako incidents list --status ongoing
 ```
 
 **解決済みのみ:**
+
 ```bash
 manako incidents list --status resolved
 ```
 
 **確認済みのみ:**
+
 ```bash
 manako incidents list --status acknowledged
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "list", status: "ongoing")
 ```
 
 **API:**
+
 ```bash
 curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
   "https://api.manako.dev/api/v1/incidents?status=ongoing"
@@ -63,39 +71,42 @@ curl -s -H "Authorization: Bearer $MANAKO_API_KEY" \
 
 ## Status Types
 
-| ステータス | 説明 |
-|-----------|------|
-| `ongoing` | 進行中。モニターが down を検出し、まだ復旧していない |
-| `acknowledged` | 確認済み。担当者が認知したが未解決 |
-| `resolved` | 解決済み。モニターが復旧を検出、または手動解決 |
+| ステータス     | 説明                                                 |
+| -------------- | ---------------------------------------------------- |
+| `ongoing`      | 進行中。モニターが down を検出し、まだ復旧していない |
+| `acknowledged` | 確認済み。担当者が認知したが未解決                   |
+| `resolved`     | 解決済み。モニターが復旧を検出、または手動解決       |
 
 ## Response Fields
 
-| フィールド | 説明 |
-|-----------|------|
-| `id` | インシデント ID (ULID) |
-| `monitorId` | 関連モニター ID |
-| `type` | インシデントタイプ |
-| `status` | ステータス (ongoing, acknowledged, resolved) |
-| `title` | インシデントタイトル |
-| `startedAt` | 発生日時 |
-| `resolvedAt` | 解決日時 (resolved の場合) |
+| フィールド   | 説明                                         |
+| ------------ | -------------------------------------------- |
+| `id`         | インシデント ID (ULID)                       |
+| `monitorId`  | 関連モニター ID                              |
+| `type`       | インシデントタイプ                           |
+| `status`     | ステータス (ongoing, acknowledged, resolved) |
+| `title`      | インシデントタイトル                         |
+| `startedAt`  | 発生日時                                     |
+| `resolvedAt` | 解決日時 (resolved の場合)                   |
 
 ### 手動インシデント作成
 
 モニターに紐付かない手動インシデントを作成する。
 
 **CLI:**
+
 ```bash
 manako incidents create --title "Payment service outage" --cause "Provider issue"
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "create", title: "Payment service outage", cause: "Provider issue")
 ```
 
 **API:**
+
 ```bash
 curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -108,16 +119,19 @@ curl -s -X POST -H "Authorization: Bearer $MANAKO_API_KEY" \
 タイトルや原因を更新する。`--title` か `--cause` のいずれかが必須。
 
 **CLI:**
+
 ```bash
 manako incidents update <incident-id> --title "Updated title" --cause "More details"
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "update", id: "<incident-id>", title: "Updated title", cause: "More details")
 ```
 
 **API:**
+
 ```bash
 curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -130,16 +144,19 @@ curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
 インシデントを手動で解決する。
 
 **CLI:**
+
 ```bash
 manako incidents resolve <incident-id> --cause "Root cause identified and fixed"
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "resolve", id: "<incident-id>", cause: "Root cause identified and fixed")
 ```
 
 **API:**
+
 ```bash
 curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -152,16 +169,19 @@ curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
 手動作成したインシデントを削除する。モニター検出のインシデントは削除不可。
 
 **CLI:**
+
 ```bash
 manako incidents delete <incident-id>
 ```
 
 **MCP:**
+
 ```
 mcp__manako__incidents(action: "delete", id: "<incident-id>")
 ```
 
 **API:**
+
 ```bash
 curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/incidents/<incident-id>
