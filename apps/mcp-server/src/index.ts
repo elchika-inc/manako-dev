@@ -29,6 +29,12 @@ app.get("/", (c) => {
   });
 });
 
+app.get("/health", (c) => {
+  const bindings = { SESSION_KV: Boolean(c.env.SESSION_KV) };
+  const ok = Object.values(bindings).every(Boolean);
+  return c.json({ status: ok ? "ok" : "degraded", bindings }, ok ? 200 : 503);
+});
+
 app.post("/tools/:toolName", async (c) => {
   const lang = getLang(c.req);
   const tr = getTranslation(lang);

@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "SESSION_KV"
-id = "9e4ceac81f3f4108896ff623ef1d1bf2"
+# 開発時に本番のセッションストアへ接続しない。
+id = "local"
 
 [vars]
 ENVIRONMENT = "development"
