@@ -6,14 +6,14 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vp test run"
   },
   "dependencies": {
     "@manako/shared": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }
