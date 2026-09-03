@@ -89,13 +89,30 @@ const { monitors } = await client.listMonitors();
 
 ## Self-Hosting
 
-The MCP Server can be deployed to Cloudflare Workers:
+You can deploy the MCP Server to Cloudflare Workers on your own account. It needs a KV namespace for session storage.
 
-```bash
-cd apps/mcp-server
-pnpm install
-pnpm deploy
-```
+1. Install dependencies.
+
+   ```bash
+   cd apps/mcp-server
+   pnpm install
+   ```
+
+2. Create a KV namespace and note the `id` it prints.
+
+   ```bash
+   npx wrangler kv namespace create SESSION_KV
+   ```
+
+3. In `apps/mcp-server/wrangler.toml`, replace `id = "<YOUR_KV_NAMESPACE_ID>"` with that `id`.
+
+4. Deploy.
+
+   ```bash
+   pnpm deploy
+   ```
+
+`API_URL` defaults to `https://api.manako.dev`. To point at your own Manako API, change `API_URL` in `wrangler.toml`.
 
 ## Links
 

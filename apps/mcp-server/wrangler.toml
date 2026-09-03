@@ -1,28 +1,14 @@
 name = "manako-mcp-server"
-# 既定環境は開発用。本番は [env.production]（CI が --env production で deploy する）
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "SESSION_KV"
-# 開発時に本番のセッションストアへ接続しない。
-id = "local"
+# `wrangler kv namespace create SESSION_KV` で作成した namespace の id に置き換える（README「セルフホスティング」参照）
+id = "<YOUR_KV_NAMESPACE_ID>"
 
 [vars]
-ENVIRONMENT = "development"
-API_URL = "http://localhost:8787"
-
-# ============================================
-# Production
-# ============================================
-[env.production]
-name = "manako-mcp-server"
-
-[[env.production.kv_namespaces]]
-binding = "SESSION_KV"
-id = "9e4ceac81f3f4108896ff623ef1d1bf2"
-
-[env.production.vars]
 ENVIRONMENT = "production"
+# 自前の Manako API を使う場合は差し替える
 API_URL = "https://api.manako.dev"
