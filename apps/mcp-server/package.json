@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@manako/api-client": "workspace:*",
+    "@manako/shared": "workspace:*",
     "hono": "^4"
   },
   "devDependencies": {

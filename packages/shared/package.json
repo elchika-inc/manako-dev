@@ -1,11 +1,14 @@
 {
-  "name": "@manako/api-client",
+  "name": "@manako/shared",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@manako/shared": "workspace:*"
+    "ulid": "^3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4"
   }
 }

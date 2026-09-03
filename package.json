@@ -6,5 +6,8 @@
     "build": "pnpm --filter @manako/mcp-server build 2>/dev/null || echo 'no build script'",
     "typecheck": "tsc --noEmit -p apps/mcp-server/tsconfig.json"
   },
+  "devDependencies": {
+    "typescript": "^6.0"
+  },
   "packageManager": "pnpm@10.6.5"
 }
