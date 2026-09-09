@@ -43,7 +43,7 @@ async function deriveChannelKey(keyMaterial: string): Promise<ChannelKey> {
 
 function uint8ToBase64(arr: Uint8Array): string {
   let binary = "";
-  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
+  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i] ?? 0);
   return btoa(binary);
 }
 

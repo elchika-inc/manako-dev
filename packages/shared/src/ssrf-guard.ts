@@ -92,6 +92,7 @@ function parseIPv6(ip: string): number[] | null {
   if (v4SuffixMatch) {
     const prefix = v4SuffixMatch[1];
     const v4Part = v4SuffixMatch[2];
+    if (prefix === undefined || v4Part === undefined) return null;
     const v4Num = parseIPv4(v4Part);
     if (v4Num === null) return null;
     const high = (v4Num >>> 16) & 0xffff;
@@ -114,8 +115,11 @@ function parseIPv6(ip: string): number[] | null {
 
   let segments: number[];
   if (halves.length === 2) {
-    const left = parseGroup(halves[0]);
-    const right = parseGroup(halves[1]);
+    const leftHalf = halves[0];
+    const rightHalf = halves[1];
+    if (leftHalf === undefined || rightHalf === undefined) return null;
+    const left = parseGroup(leftHalf);
+    const right = parseGroup(rightHalf);
     const fill = 8 - left.length - right.length;
     if (fill < 0) return null;
     segments = [...left, ...Array(fill).fill(0), ...right];
@@ -146,9 +150,9 @@ function isPrivateIPv6(segments: number[]): boolean {
   // ::1 (loopback)
   if (segments.slice(0, 7).every((s) => s === 0) && segments[7] === 1) return true;
   // fe80::/10 (link-local)
-  if ((segments[0] & 0xffc0) === 0xfe80) return true;
+  if (((segments[0] ?? 0) & 0xffc0) === 0xfe80) return true;
   // fc00::/7 (unique local)
-  if ((segments[0] & 0xfe00) === 0xfc00) return true;
+  if (((segments[0] ?? 0) & 0xfe00) === 0xfc00) return true;
 
   // ::ffff:x.x.x.x (IPv4-mapped IPv6)
   if (
@@ -159,7 +163,7 @@ function isPrivateIPv6(segments: number[]): boolean {
     segments[4] === 0 &&
     segments[5] === 0xffff
   ) {
-    const ipv4Num = ((segments[6] << 16) | segments[7]) >>> 0;
+    const ipv4Num = (((segments[6] ?? 0) << 16) | (segments[7] ?? 0)) >>> 0;
     return isPrivateIPv4(ipv4Num);
   }
 
@@ -173,7 +177,7 @@ function isPrivateIPv6(segments: number[]): boolean {
     segments[5] === 0 &&
     (segments[6] !== 0 || segments[7] !== 0)
   ) {
-    const ipv4Num = ((segments[6] << 16) | segments[7]) >>> 0;
+    const ipv4Num = (((segments[6] ?? 0) << 16) | (segments[7] ?? 0)) >>> 0;
     return isPrivateIPv4(ipv4Num);
   }
 
