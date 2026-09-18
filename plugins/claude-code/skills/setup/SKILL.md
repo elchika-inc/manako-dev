@@ -40,10 +40,10 @@ npm install -g manako
 Manako モノレポ内で開発中なら代替として:
 
 ```bash
-pnpm --filter @manako/cli build
+pnpm --dir apps/cli build
 ```
 
-ビルド後、`pnpm --filter @manako/cli exec manako` で実行可能。
+ビルド後、リポジトリルートから `node apps/cli/dist/index.js <サブコマンド>` で実行可能。
 
 ### Step 2: CLI 認証
 
