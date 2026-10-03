@@ -247,19 +247,17 @@ async function executeMonitors(
       case "create": {
         if (!args.name) return err(tm.monitors.nameRequired);
         const monitorType = (args.type as string) || "http";
-        let config: Record<string, unknown>;
-        if (monitorType === "http") {
-          if (!args.url && !args.config) return err(tm.monitors.urlOrConfigRequired);
-          config = (args.config as Record<string, unknown>) || {
-            url: args.url,
-            method: "GET",
-            expectedStatus: 200,
-            timeoutMs: 10000,
-          };
-        } else {
-          if (!args.config) return err(tm.monitors.configRequired);
-          config = args.config as Record<string, unknown>;
+        if (monitorType === "http" && !args.url && !args.config) {
+          return err(tm.monitors.urlOrConfigRequired);
         }
+        if (monitorType !== "http" && !args.config) return err(tm.monitors.configRequired);
+
+        const config = (args.config as Record<string, unknown>) || {
+          url: args.url,
+          method: "GET",
+          expectedStatus: 200,
+          timeoutMs: 10000,
+        };
         const { monitor } = await client.createMonitor({
           type: monitorType as MonitorType,
           name: args.name as string,
@@ -310,63 +308,8 @@ async function executeMonitors(
           `${t(tm.monitors.checkResult, { status })}${time}${errMsg}\nMonitor: ${formatMonitorCompact(monitor)}`,
         );
       }
-      case "maintenance": {
-        const maintenanceUntil =
-          (args.maintenanceUntil as string) ?? new Date(Date.now() + 600 * 1000).toISOString();
-        if (args.end) {
-          if (args.all) {
-            const { updated } = await client.endAllMaintenance(args.notify as boolean | undefined);
-            return ok(t(tm.monitors.maintenanceEndedAll, { count: updated }));
-          }
-          if (args.monitorIds) {
-            const ids = (args.monitorIds as string).split(",");
-            const { updated } = await client.endBulkMaintenance(
-              ids,
-              args.notify as boolean | undefined,
-            );
-            return ok(t(tm.monitors.maintenanceEndedBulk, { count: updated }));
-          }
-          if (!args.id) return err(t(tm.monitors.idRequired, { action: "maintenance" }));
-          const { monitor } = await client.endMaintenance(
-            args.id as string,
-            args.notify as boolean | undefined,
-          );
-          return ok(t(tm.monitors.maintenanceEnded, { name: monitor.name, id: monitor.id }));
-        }
-        if (args.all) {
-          const { updated } = await client.startAllMaintenance(
-            maintenanceUntil,
-            args.notify as boolean | undefined,
-          );
-          return ok(
-            t(tm.monitors.maintenanceStartedAll, { count: updated, until: maintenanceUntil }),
-          );
-        }
-        if (args.monitorIds) {
-          const ids = (args.monitorIds as string).split(",");
-          const { updated } = await client.startBulkMaintenance(
-            ids,
-            maintenanceUntil,
-            args.notify as boolean | undefined,
-          );
-          return ok(
-            t(tm.monitors.maintenanceStartedBulk, { count: updated, until: maintenanceUntil }),
-          );
-        }
-        if (!args.id) return err(t(tm.monitors.idRequired, { action: "maintenance" }));
-        const { monitor } = await client.startMaintenance(
-          args.id as string,
-          maintenanceUntil,
-          args.notify as boolean | undefined,
-        );
-        return ok(
-          t(tm.monitors.maintenanceStarted, {
-            name: monitor.name,
-            id: monitor.id,
-            until: monitor.maintenanceUntil ?? "",
-          }),
-        );
-      }
+      case "maintenance":
+        return await executeMonitorMaintenance(args, client, tm);
       case "stats-reset": {
         if (!args.id) return err(t(tm.monitors.idRequired, { action: "stats-reset" }));
         const result = await client.resetMonitorStats(
@@ -387,6 +330,67 @@ async function executeMonitors(
     if (e.upgradeUrl) return err(t(tm.monitors.upgradePlan, { msg: e.message, url: e.upgradeUrl }));
     return err(e.message || String(e));
   }
+}
+
+async function executeMonitorMaintenance(
+  args: Record<string, unknown>,
+  client: ManakoClient,
+  tm: Translation,
+): Promise<ToolResult> {
+  const maintenanceUntil =
+    (args.maintenanceUntil as string) ?? new Date(Date.now() + 600 * 1000).toISOString();
+  if (args.end) return endMonitorMaintenance(args, client, tm);
+  if (args.all) {
+    const { updated } = await client.startAllMaintenance(
+      maintenanceUntil,
+      args.notify as boolean | undefined,
+    );
+    return ok(t(tm.monitors.maintenanceStartedAll, { count: updated, until: maintenanceUntil }));
+  }
+  if (args.monitorIds) {
+    const ids = (args.monitorIds as string).split(",");
+    const { updated } = await client.startBulkMaintenance(
+      ids,
+      maintenanceUntil,
+      args.notify as boolean | undefined,
+    );
+    return ok(t(tm.monitors.maintenanceStartedBulk, { count: updated, until: maintenanceUntil }));
+  }
+  if (!args.id) return err(t(tm.monitors.idRequired, { action: "maintenance" }));
+  const { monitor } = await client.startMaintenance(
+    args.id as string,
+    maintenanceUntil,
+    args.notify as boolean | undefined,
+  );
+  return ok(
+    t(tm.monitors.maintenanceStarted, {
+      name: monitor.name,
+      id: monitor.id,
+      until: monitor.maintenanceUntil ?? "",
+    }),
+  );
+}
+
+async function endMonitorMaintenance(
+  args: Record<string, unknown>,
+  client: ManakoClient,
+  tm: Translation,
+): Promise<ToolResult> {
+  if (args.all) {
+    const { updated } = await client.endAllMaintenance(args.notify as boolean | undefined);
+    return ok(t(tm.monitors.maintenanceEndedAll, { count: updated }));
+  }
+  if (args.monitorIds) {
+    const ids = (args.monitorIds as string).split(",");
+    const { updated } = await client.endBulkMaintenance(ids, args.notify as boolean | undefined);
+    return ok(t(tm.monitors.maintenanceEndedBulk, { count: updated }));
+  }
+  if (!args.id) return err(t(tm.monitors.idRequired, { action: "maintenance" }));
+  const { monitor } = await client.endMaintenance(
+    args.id as string,
+    args.notify as boolean | undefined,
+  );
+  return ok(t(tm.monitors.maintenanceEnded, { name: monitor.name, id: monitor.id }));
 }
 
 async function executeIncidents(
