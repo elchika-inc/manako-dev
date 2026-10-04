@@ -179,6 +179,10 @@ curl -s -X PUT -H "Authorization: Bearer $MANAKO_API_KEY" \
   https://api.manako.dev/api/v1/monitors/<monitor-id>
 ```
 
+MCP の更新には `name` / `url` / `config` / `intervalSeconds` / `isActive` のいずれかが必要。`url` だけなら HTTP モニターの既存設定を取得し、URL のみ差し替えて送信する。TCP / Ping への `url` 更新はエラー。明示した `config` は `url` より優先し、取得・マージせず送信する。
+
+MCP の `get` / `check` の簡潔表示は `Accept-Language: ja` でモニター ID・間隔・エラー・モニターのラベルを日本語にする。機械処理にはラベル文字列でなく `verbose: true` の JSON を使う。
+
 ### モニター削除
 
 **CLI:**

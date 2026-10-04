@@ -241,7 +241,7 @@ async function executeMonitors(
         const { monitor } = await client.getMonitor(args.id as string);
         if (args.verbose) return ok(JSON.stringify(monitor, null, 2));
         return ok(
-          `${formatMonitorCompact(monitor)}\nID: ${monitor.id}\nInterval: ${monitor.intervalSeconds}s`,
+          `${formatMonitorCompact(monitor)}\n${tm.monitors.idLabel} ${monitor.id}\n${tm.monitors.intervalLabel} ${monitor.intervalSeconds}s`,
         );
       }
       case "create": {
@@ -273,19 +273,17 @@ async function executeMonitors(
         if (!args.id) return err(t(tm.monitors.idRequired, { action: "update" }));
         const updateData: Record<string, unknown> = {};
         if (args.name !== undefined) updateData.name = args.name;
-        // config (explicit full object) takes precedence over url (convenience shorthand)
+        // 明示した config は url の省略記法より優先する。
         if (args.config !== undefined) {
           updateData.config = args.config;
         } else if (args.url !== undefined) {
-          updateData.config = {
-            url: args.url,
-            method: "GET",
-            expectedStatus: 200,
-            timeoutMs: 10000,
-          };
+          const { monitor } = await client.getMonitor(args.id as string);
+          if (monitor.type !== "http") return err(tm.monitors.urlUpdateHttpOnly);
+          updateData.config = { ...monitor.config, url: args.url };
         }
         if (args.intervalSeconds !== undefined) updateData.intervalSeconds = args.intervalSeconds;
         if (args.isActive !== undefined) updateData.isActive = args.isActive;
+        if (Object.keys(updateData).length === 0) return err(tm.monitors.nothingToUpdate);
         const { monitor } = await client.updateMonitor(args.id as string, updateData);
         return ok(
           t(tm.monitors.updated, { summary: formatMonitorCompact(monitor), id: monitor.id }),
@@ -303,9 +301,11 @@ async function executeMonitors(
         // result.status は CheckResult["status"] = "up" | "down" のみ
         const status = result.status === "up" ? "🟢 up" : "🔴 down";
         const time = result.responseTimeMs !== undefined ? ` (${result.responseTimeMs}ms)` : "";
-        const errMsg = result.errorMessage ? `\nError: ${result.errorMessage}` : "";
+        const errMsg = result.errorMessage
+          ? `\n${tm.monitors.errorLabel} ${result.errorMessage}`
+          : "";
         return ok(
-          `${t(tm.monitors.checkResult, { status })}${time}${errMsg}\nMonitor: ${formatMonitorCompact(monitor)}`,
+          `${t(tm.monitors.checkResult, { status })}${time}${errMsg}\n${tm.monitors.monitorLabel} ${formatMonitorCompact(monitor)}`,
         );
       }
       case "maintenance":
@@ -321,7 +321,7 @@ async function executeMonitors(
       default:
         return err(
           t(tm.monitors.unknownAction, {
-            action: args.action as string,
+            action: String(args.action),
             actions: MONITOR_ACTIONS.join(", "),
           }),
         );
@@ -348,7 +348,11 @@ async function executeMonitorMaintenance(
     return ok(t(tm.monitors.maintenanceStartedAll, { count: updated, until: maintenanceUntil }));
   }
   if (args.monitorIds) {
-    const ids = (args.monitorIds as string).split(",");
+    const ids = (args.monitorIds as string)
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (ids.length === 0) return err(tm.monitors.monitorIdsRequired);
     const { updated } = await client.startBulkMaintenance(
       ids,
       maintenanceUntil,
@@ -381,7 +385,11 @@ async function endMonitorMaintenance(
     return ok(t(tm.monitors.maintenanceEndedAll, { count: updated }));
   }
   if (args.monitorIds) {
-    const ids = (args.monitorIds as string).split(",");
+    const ids = (args.monitorIds as string)
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (ids.length === 0) return err(tm.monitors.monitorIdsRequired);
     const { updated } = await client.endBulkMaintenance(ids, args.notify as boolean | undefined);
     return ok(t(tm.monitors.maintenanceEndedBulk, { count: updated }));
   }
@@ -455,7 +463,7 @@ async function executeIncidents(
       default:
         return err(
           t(tm.incidents.unknownAction, {
-            action: args.action as string,
+            action: String(args.action),
             actions: INCIDENT_ACTIONS.join(", "),
           }),
         );
@@ -526,7 +534,7 @@ async function executeServices(
       default:
         return err(
           t(tm.services.unknownAction, {
-            action: args.action as string,
+            action: String(args.action),
             actions: SERVICE_ACTIONS.join(", "),
           }),
         );
@@ -562,7 +570,7 @@ async function executeAuditLogs(
       default:
         return err(
           t(tm.auditLogs.unknownAction, {
-            action: args.action as string,
+            action: String(args.action),
             actions: AUDIT_LOG_ACTIONS.join(", "),
           }),
         );
@@ -587,7 +595,7 @@ async function executeNotificationChannels(
         return ok(t(tm.notificationChannels.testSent, { id: args.id as string }));
       }
       default:
-        return err(t(tm.notificationChannels.unknownAction, { action: args.action as string }));
+        return err(t(tm.notificationChannels.unknownAction, { action: String(args.action) }));
     }
   } catch (e: any) {
     if (e.upgradeUrl)

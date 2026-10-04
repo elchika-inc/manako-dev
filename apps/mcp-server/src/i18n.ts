@@ -32,13 +32,20 @@ export interface Translation {
     nameRequired: string;
     urlOrConfigRequired: string;
     configRequired: string;
+    urlUpdateHttpOnly: string;
+    nothingToUpdate: string;
     created: string;
     updated: string;
     deleted: string;
     checkResult: string;
+    idLabel: string;
+    intervalLabel: string;
+    errorLabel: string;
+    monitorLabel: string;
     unknownAction: string;
     upgradePlan: string;
     idRequiredForUpdate: string;
+    monitorIdsRequired: string;
     maintenanceStarted: string;
     maintenanceEnded: string;
     maintenanceStartedAll: string;
@@ -126,20 +133,28 @@ const en: Translation = {
   },
   monitors: {
     description:
-      "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID), stats-reset (delete check history). Use verbose=true for full data.",
+      "Manage monitoring targets. Actions: list (show all), get (detail by ID), create (new monitor, supports all types), update (modify by ID), delete (remove by ID), check (run an immediate check), maintenance (start/end maintenance), stats-reset (delete check history). Use verbose=true for full data.",
     noMonitors: "No monitors configured.",
     title: "Monitors ({{count}}):",
     idRequired: "id is required for {{action}} action",
     nameRequired: "name is required for create action",
     urlOrConfigRequired: "url or config is required for http create",
     configRequired: "config is required for non-http types",
+    urlUpdateHttpOnly: "url can only be updated for http monitors",
+    nothingToUpdate:
+      "Nothing to update. Provide at least one of: name, url, config, intervalSeconds, isActive.",
     created: "Created: {{summary}}\nID: {{id}}",
     updated: "Updated: {{summary}}\nID: {{id}}",
     deleted: "Monitor {{id}} deleted.",
     checkResult: "Check result: {{status}}",
+    idLabel: "ID:",
+    intervalLabel: "Interval:",
+    errorLabel: "Error:",
+    monitorLabel: "Monitor:",
     unknownAction: "Unknown action: {{action}}. Use: {{actions}}",
     upgradePlan: "{{msg}}\nUpgrade your plan: {{url}}",
     idRequiredForUpdate: "id is required for update action",
+    monitorIdsRequired: "monitorIds must contain at least one monitor ID",
     maintenanceStarted: "Maintenance started: {{name}} ({{id}}) - until {{until}}",
     maintenanceEnded: "Maintenance ended: {{name}} ({{id}})",
     maintenanceStartedAll: "Maintenance started for {{count}} monitors until {{until}}",
@@ -232,20 +247,28 @@ const ja: Translation = {
   },
   monitors: {
     description:
-      "監視ターゲットを管理します。アクション: list (一覧), get (詳細), create (作成), update (更新), delete (削除), check (即時チェック), stats-reset (統計リセット)。verbose=true で全データ表示。",
+      "監視ターゲットを管理します。アクション: list (一覧), get (詳細), create (作成), update (更新), delete (削除), check (即時チェック), maintenance (メンテナンス開始/終了), stats-reset (統計リセット)。verbose=true で全データ表示。",
     noMonitors: "モニターが設定されていません。",
     title: "モニター ({{count}}):",
     idRequired: "{{action}} アクションには id が必要です",
     nameRequired: "作成アクションには name が必要です",
     urlOrConfigRequired: "HTTP作成には url または config が必要です",
     configRequired: "HTTP以外のタイプには config が必要です",
+    urlUpdateHttpOnly: "url は HTTP モニターでのみ更新できます",
+    nothingToUpdate:
+      "更新する項目がありません。name / url / config / intervalSeconds / isActive のいずれかを指定してください。",
     created: "作成: {{summary}}\nID: {{id}}",
     updated: "更新: {{summary}}\nID: {{id}}",
     deleted: "モニター {{id}} を削除しました。",
     checkResult: "チェック結果: {{status}}",
+    idLabel: "モニター ID:",
+    intervalLabel: "間隔:",
+    errorLabel: "エラー:",
+    monitorLabel: "モニター:",
     unknownAction: "不明なアクション: {{action}}。使用可能: {{actions}}",
     upgradePlan: "{{msg}}\nプランをアップグレード: {{url}}",
     idRequiredForUpdate: "更新アクションには id が必要です",
+    monitorIdsRequired: "monitorIds には1件以上のモニター ID を指定してください",
     maintenanceStarted: "メンテナンス開始: {{name}} ({{id}}) - {{until}} まで",
     maintenanceEnded: "メンテナンス終了: {{name}} ({{id}})",
     maintenanceStartedAll: "{{count}}件のモニターのメンテナンスを開始しました (終了: {{until}})",

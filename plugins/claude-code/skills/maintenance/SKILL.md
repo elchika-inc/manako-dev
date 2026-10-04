@@ -162,6 +162,8 @@ curl -s -X DELETE -H "Authorization: Bearer $MANAKO_API_KEY" \
 | `--ids <id1,id2>`      | 一括操作対象のモニターID(カンマ区切り、最大100件)                                           |
 | `--all`                | 全アクティブモニターに適用                                                                  |
 
+CLI の `--ids` は各 ID の前後の空白と空要素を除き、空白やカンマだけで ID が残らなければ API を呼ばずエラー終了する。空文字は未指定扱いで、`--all` は `--ids` より優先する。 MCP の `monitorIds` も同じ整形を行い、対象の優先順位は `all` > `monitorIds` > `id`。
+
 ## Constraints
 
 - メンテナンス最大期間: 7日間
